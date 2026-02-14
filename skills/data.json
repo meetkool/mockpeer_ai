@@ -1,0 +1,884 @@
+{
+    "skills": [
+        {
+            "id": "ce1e7aa3-dbfd-469e-a538-c329fbe78383",
+            "title": "Authentication Patterns",
+            "description": "Implement secure JWT authentication with refresh tokens.",
+            "content": "# Authentication Patterns\n\nI help you implement secure authentication.\n\n## JWT Authentication\n```typescript\nimport jwt from 'jsonwebtoken';\n\nfunction generateTokens(userId: string) {\n  const accessToken = jwt.sign(\n    { sub: userId },\n    process.env.JWT_SECRET!,\n    { expiresIn: '15m' }\n  );\n\n  const refreshToken = jwt.sign(\n    { sub: userId },\n    process.env.JWT_REFRESH_SECRET!,\n    { expiresIn: '7d' }\n  );\n\n  return { accessToken, refreshToken };\n}\n\nfunction verifyToken(token: string) {\n  return jwt.verify(token, process.env.JWT_SECRET!) as { sub: string };\n}\n```\n\n## Password Hashing\n```typescript\nimport bcrypt from 'bcryptjs';\n\nasync function hashPassword(password: string): Promise<string> {\n  return bcrypt.hash(password, 12);\n}\n\nasync function verifyPassword(password: string, hash: string): Promise<boolean> {\n  return bcrypt.compare(password, hash);\n}\n```\n\n## Refresh Token Flow\n```typescript\nasync function refreshAccessToken(refreshToken: string) {\n  const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!);\n\n  // Verify refresh token is valid in database\n  const storedToken = await db.refreshToken.findUnique({\n    where: { token: refreshToken },\n  });\n\n  if (!storedToken || storedToken.revoked) {\n    throw new UnauthorizedError();\n  }\n\n  // Generate new tokens\n  return generateTokens(payload.sub);\n}\n```",
+            "createdAt": "2026-02-03T18:57:41.985Z",
+            "updatedAt": "2026-02-03T18:57:41.985Z"
+        },
+        {
+            "id": "a919877e-824f-4ead-9e42-7d19dcd5038e",
+            "title": "Error Handling Best Practices",
+            "description": "Implement robust error handling with custom error classes.",
+            "content": "# Error Handling Best Practices\n\nI help you implement robust error handling.\n\n## Custom Error Classes\n```typescript\nexport class AppError extends Error {\n  constructor(\n    message: string,\n    public statusCode: number = 500,\n    public code: string = 'INTERNAL_ERROR',\n  ) {\n    super(message);\n    this.name = 'AppError';\n  }\n}\n\nexport class NotFoundError extends AppError {\n  constructor(resource: string) {\n    super(`${resource} not found`, 404, 'NOT_FOUND');\n  }\n}\n\nexport class ValidationError extends AppError {\n  constructor(message: string) {\n    super(message, 422, 'VALIDATION_ERROR');\n  }\n}\n```\n\n## Global Error Handler (NestJS)\n```typescript\n@Catch()\nexport class GlobalExceptionFilter implements ExceptionFilter {\n  catch(exception: unknown, host: ArgumentsHost) {\n    const ctx = host.switchToHttp();\n    const response = ctx.getResponse();\n\n    const { status, body } = this.getErrorResponse(exception);\n\n    response.status(status).json(body);\n  }\n\n  private getErrorResponse(exception: unknown) {\n    if (exception instanceof AppError) {\n      return {\n        status: exception.statusCode,\n        body: {\n          error: exception.code,\n          message: exception.message,\n        },\n      };\n    }\n    return {\n      status: 500,\n      body: { error: 'INTERNAL_ERROR', message: 'Something went wrong' },\n    };\n  }\n}\n```",
+            "createdAt": "2026-02-03T18:57:41.982Z",
+            "updatedAt": "2026-02-03T18:57:41.982Z"
+        },
+        {
+            "id": "5adf6a72-f481-4ea1-9d6f-c0d6bb3f0faf",
+            "title": "Vitest Unit Testing",
+            "description": "Write fast unit tests with Vitest and proper mocking.",
+            "content": "# Vitest Unit Testing\n\nI help you write unit tests with Vitest.\n\n## Basic Tests\n```typescript\nimport { describe, it, expect, vi } from 'vitest';\n\ndescribe('UserService', () => {\n  it('should create a user', async () => {\n    const result = await userService.create({\n      email: 'test@example.com',\n    });\n\n    expect(result).toMatchObject({\n      email: 'test@example.com',\n    });\n    expect(result.id).toBeDefined();\n  });\n\n  it('should throw on duplicate email', async () => {\n    await expect(\n      userService.create({ email: 'existing@example.com' })\n    ).rejects.toThrow('Email already exists');\n  });\n});\n```\n\n## Mocking\n```typescript\nimport { vi } from 'vitest';\n\n// Mock module\nvi.mock('./api', () => ({\n  fetchUser: vi.fn().mockResolvedValue({ id: '1', name: 'John' }),\n}));\n\n// Mock function\nconst mockFn = vi.fn();\nmockFn.mockReturnValue(42);\n\n// Spy on method\nconst spy = vi.spyOn(service, 'method');\nspy.mockImplementation(() => 'mocked');\n```\n\n## Configuration\n```typescript\n// vitest.config.ts\nexport default defineConfig({\n  test: {\n    globals: true,\n    environment: 'node',\n    coverage: {\n      provider: 'v8',\n      reporter: ['text', 'html'],\n    },\n  },\n});\n```",
+            "createdAt": "2026-02-03T18:57:41.978Z",
+            "updatedAt": "2026-02-03T18:57:41.978Z"
+        },
+        {
+            "id": "a4819481-67e9-4e95-9f9b-f606a61f953a",
+            "title": "Playwright E2E Testing",
+            "description": "Write E2E tests with Playwright for browser automation.",
+            "content": "# Playwright E2E Testing\n\nI help you write E2E tests with Playwright.\n\n## Basic Test\n```typescript\nimport { test, expect } from '@playwright/test';\n\ntest.describe('Authentication', () => {\n  test('should login successfully', async ({ page }) => {\n    await page.goto('/login');\n\n    await page.getByLabel('Email').fill('user@example.com');\n    await page.getByLabel('Password').fill('password123');\n    await page.getByRole('button', { name: 'Sign in' }).click();\n\n    await expect(page).toHaveURL('/dashboard');\n    await expect(page.getByText('Welcome')).toBeVisible();\n  });\n});\n```\n\n## Page Objects\n```typescript\nclass LoginPage {\n  constructor(private page: Page) {}\n\n  async goto() {\n    await this.page.goto('/login');\n  }\n\n  async login(email: string, password: string) {\n    await this.page.getByLabel('Email').fill(email);\n    await this.page.getByLabel('Password').fill(password);\n    await this.page.getByRole('button', { name: 'Sign in' }).click();\n  }\n}\n\ntest('login with page object', async ({ page }) => {\n  const loginPage = new LoginPage(page);\n  await loginPage.goto();\n  await loginPage.login('user@example.com', 'password123');\n  await expect(page).toHaveURL('/dashboard');\n});\n```\n\n## Configuration\n```typescript\n// playwright.config.ts\nexport default defineConfig({\n  testDir: './tests',\n  use: {\n    baseURL: 'http://localhost:3000',\n    screenshot: 'only-on-failure',\n    trace: 'on-first-retry',\n  },\n});\n```",
+            "createdAt": "2026-02-03T18:57:41.975Z",
+            "updatedAt": "2026-02-03T18:57:41.975Z"
+        },
+        {
+            "id": "315d990b-8573-426f-b6a6-6efa4484cb05",
+            "title": "tRPC Type-Safe APIs",
+            "description": "Build end-to-end type-safe APIs with tRPC and Zod.",
+            "content": "# tRPC Type-Safe APIs\n\nI help you build type-safe APIs with tRPC.\n\n## Server Router\n```typescript\nimport { initTRPC } from '@trpc/server';\nimport { z } from 'zod';\n\nconst t = initTRPC.create();\n\nexport const appRouter = t.router({\n  user: t.router({\n    getById: t.procedure\n      .input(z.object({ id: z.string() }))\n      .query(async ({ input }) => {\n        return db.user.findUnique({ where: { id: input.id } });\n      }),\n\n    create: t.procedure\n      .input(z.object({\n        email: z.string().email(),\n        name: z.string().optional(),\n      }))\n      .mutation(async ({ input }) => {\n        return db.user.create({ data: input });\n      }),\n  }),\n});\n\nexport type AppRouter = typeof appRouter;\n```\n\n## Client Usage\n```tsx\nimport { trpc } from '@/utils/trpc';\n\nfunction UserProfile({ id }: { id: string }) {\n  const { data, isLoading } = trpc.user.getById.useQuery({ id });\n\n  const createUser = trpc.user.create.useMutation({\n    onSuccess: () => {\n      utils.user.invalidate();\n    },\n  });\n\n  if (isLoading) return <Spinner />;\n  return <div>{data?.name}</div>;\n}\n```\n\n## Benefits\n- End-to-end type safety\n- No code generation\n- Full autocomplete\n- Automatic validation",
+            "createdAt": "2026-02-03T18:57:41.971Z",
+            "updatedAt": "2026-02-03T18:57:41.971Z"
+        },
+        {
+            "id": "3921e588-5bca-4de2-989f-d9621d8fc094",
+            "title": "GraphQL API Development",
+            "description": "Build GraphQL APIs with schema definition and resolvers.",
+            "content": "# GraphQL API Development\n\nI help you build GraphQL APIs.\n\n## Schema Definition\n```graphql\ntype User {\n  id: ID!\n  email: String!\n  name: String\n  posts: [Post!]!\n}\n\ntype Post {\n  id: ID!\n  title: String!\n  content: String\n  author: User!\n}\n\ntype Query {\n  user(id: ID!): User\n  users: [User!]!\n  post(id: ID!): Post\n}\n\ntype Mutation {\n  createUser(input: CreateUserInput!): User!\n  createPost(input: CreatePostInput!): Post!\n}\n\ninput CreateUserInput {\n  email: String!\n  name: String\n}\n```\n\n## Resolvers (NestJS)\n```typescript\n@Resolver(() => User)\nexport class UserResolver {\n  constructor(private userService: UserService) {}\n\n  @Query(() => User, { nullable: true })\n  async user(@Args('id') id: string) {\n    return this.userService.findById(id);\n  }\n\n  @ResolveField(() => [Post])\n  async posts(@Parent() user: User) {\n    return this.postService.findByUserId(user.id);\n  }\n\n  @Mutation(() => User)\n  async createUser(@Args('input') input: CreateUserInput) {\n    return this.userService.create(input);\n  }\n}\n```",
+            "createdAt": "2026-02-03T18:57:41.968Z",
+            "updatedAt": "2026-02-03T18:57:41.968Z"
+        },
+        {
+            "id": "9bb57e8a-225b-44ad-abd6-8cc9f0694329",
+            "title": "Kubernetes Basics",
+            "description": "Deploy applications to Kubernetes with deployments and services.",
+            "content": "# Kubernetes Basics\n\nI help you deploy applications to Kubernetes.\n\n## Deployment\n```yaml\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: my-app\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: my-app\n  template:\n    metadata:\n      labels:\n        app: my-app\n    spec:\n      containers:\n        - name: app\n          image: my-app:latest\n          ports:\n            - containerPort: 3000\n          env:\n            - name: NODE_ENV\n              value: production\n          resources:\n            requests:\n              memory: \"128Mi\"\n              cpu: \"100m\"\n            limits:\n              memory: \"256Mi\"\n              cpu: \"500m\"\n          readinessProbe:\n            httpGet:\n              path: /health\n              port: 3000\n```\n\n## Service\n```yaml\napiVersion: v1\nkind: Service\nmetadata:\n  name: my-app\nspec:\n  selector:\n    app: my-app\n  ports:\n    - port: 80\n      targetPort: 3000\n  type: ClusterIP\n```\n\n## Ingress\n```yaml\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: my-app\nspec:\n  rules:\n    - host: app.example.com\n      http:\n        paths:\n          - path: /\n            pathType: Prefix\n            backend:\n              service:\n                name: my-app\n                port:\n                  number: 80\n```",
+            "createdAt": "2026-02-03T18:57:41.964Z",
+            "updatedAt": "2026-02-03T18:57:41.964Z"
+        },
+        {
+            "id": "a7fb8813-c74c-41c2-9c66-9c06a3a8129b",
+            "title": "Docker Containerization",
+            "description": "Containerize applications with Docker and Docker Compose.",
+            "content": "# Docker Containerization\n\nI help you containerize applications with Docker.\n\n## Node.js Dockerfile\n```dockerfile\n# Build stage\nFROM node:20-alpine AS builder\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci\nCOPY . .\nRUN npm run build\n\n# Production stage\nFROM node:20-alpine\nWORKDIR /app\nCOPY --from=builder /app/dist ./dist\nCOPY --from=builder /app/node_modules ./node_modules\nCOPY --from=builder /app/package.json ./\n\nUSER node\nEXPOSE 3000\nCMD [\"node\", \"dist/main.js\"]\n```\n\n## Docker Compose\n```yaml\nversion: '3.8'\nservices:\n  app:\n    build: .\n    ports:\n      - \"3000:3000\"\n    environment:\n      - DATABASE_URL=postgres://user:pass@db:5432/app\n    depends_on:\n      - db\n      - redis\n\n  db:\n    image: postgres:15-alpine\n    environment:\n      POSTGRES_USER: user\n      POSTGRES_PASSWORD: pass\n      POSTGRES_DB: app\n    volumes:\n      - postgres_data:/var/lib/postgresql/data\n\n  redis:\n    image: redis:7-alpine\n\nvolumes:\n  postgres_data:\n```\n\n## Best Practices\n- Use multi-stage builds\n- Run as non-root user\n- Use specific image tags\n- Add .dockerignore file\n- Cache dependencies layer",
+            "createdAt": "2026-02-03T18:57:41.960Z",
+            "updatedAt": "2026-02-03T18:57:41.960Z"
+        },
+        {
+            "id": "a0a75e71-8d84-4e61-979a-4a9e08f2b1b3",
+            "title": "Socket.io Real-time",
+            "description": "Build real-time features with Socket.io for chat and live updates.",
+            "content": "# Socket.io Real-time\n\nI help you build real-time features with Socket.io.\n\n## Server Setup (NestJS)\n```typescript\n@WebSocketGateway({\n  cors: { origin: '*' },\n})\nexport class ChatGateway {\n  @WebSocketServer()\n  server: Server;\n\n  @SubscribeMessage('message')\n  handleMessage(@MessageBody() data: { room: string; text: string }) {\n    this.server.to(data.room).emit('message', {\n      text: data.text,\n      timestamp: new Date(),\n    });\n  }\n\n  @SubscribeMessage('join')\n  handleJoin(@ConnectedSocket() client: Socket, @MessageBody() room: string) {\n    client.join(room);\n    return { event: 'joined', room };\n  }\n}\n```\n\n## Client Setup (React)\n```tsx\nimport { io, Socket } from 'socket.io-client';\n\nfunction useSocket() {\n  const [socket, setSocket] = useState<Socket | null>(null);\n\n  useEffect(() => {\n    const s = io('http://localhost:3000');\n    setSocket(s);\n\n    return () => { s.disconnect(); };\n  }, []);\n\n  return socket;\n}\n\nfunction Chat({ room }: { room: string }) {\n  const socket = useSocket();\n  const [messages, setMessages] = useState<Message[]>([]);\n\n  useEffect(() => {\n    if (!socket) return;\n\n    socket.emit('join', room);\n    socket.on('message', (msg) => setMessages((prev) => [...prev, msg]));\n\n    return () => { socket.off('message'); };\n  }, [socket, room]);\n\n  const sendMessage = (text: string) => {\n    socket?.emit('message', { room, text });\n  };\n\n  return /* render chat UI */;\n}\n```",
+            "createdAt": "2026-02-03T18:57:41.957Z",
+            "updatedAt": "2026-02-03T18:57:41.957Z"
+        },
+        {
+            "id": "b3f375e6-73da-4ec4-bf2a-f508a5643573",
+            "title": "React Query Data Fetching",
+            "description": "Manage server state with React Query for data fetching.",
+            "content": "# React Query Data Fetching\n\nI help you manage server state with React Query.\n\n## Setup\n```tsx\nimport { QueryClient, QueryClientProvider } from '@tanstack/react-query';\n\nconst queryClient = new QueryClient({\n  defaultOptions: {\n    queries: {\n      staleTime: 60 * 1000, // 1 minute\n      retry: 2,\n    },\n  },\n});\n\nfunction App() {\n  return (\n    <QueryClientProvider client={queryClient}>\n      <MyApp />\n    </QueryClientProvider>\n  );\n}\n```\n\n## Queries\n```tsx\nfunction UserProfile({ userId }: { userId: string }) {\n  const { data, isLoading, error } = useQuery({\n    queryKey: ['user', userId],\n    queryFn: () => api.getUser(userId),\n  });\n\n  if (isLoading) return <Spinner />;\n  if (error) return <Error message={error.message} />;\n\n  return <div>{data.name}</div>;\n}\n```\n\n## Mutations\n```tsx\nfunction CreateUserForm() {\n  const queryClient = useQueryClient();\n\n  const mutation = useMutation({\n    mutationFn: (data: CreateUserDto) => api.createUser(data),\n    onSuccess: () => {\n      queryClient.invalidateQueries({ queryKey: ['users'] });\n    },\n  });\n\n  return (\n    <form onSubmit={(e) => {\n      e.preventDefault();\n      mutation.mutate({ name: 'John' });\n    }}>\n      <button disabled={mutation.isPending}>\n        {mutation.isPending ? 'Creating...' : 'Create'}\n      </button>\n    </form>\n  );\n}\n```",
+            "createdAt": "2026-02-03T18:57:41.953Z",
+            "updatedAt": "2026-02-03T18:57:41.953Z"
+        },
+        {
+            "id": "0c6f3f3d-5278-415a-9a0b-a4e3f1a00f7d",
+            "title": "Zod Schema Validation",
+            "description": "Validate data with Zod for type-safe schema validation.",
+            "content": "# Zod Schema Validation\n\nI help you validate data with Zod schemas.\n\n## Basic Schemas\n```typescript\nimport { z } from 'zod';\n\nconst userSchema = z.object({\n  email: z.string().email('Invalid email'),\n  name: z.string().min(2, 'Name too short').max(100),\n  age: z.number().int().positive().optional(),\n  role: z.enum(['admin', 'user']).default('user'),\n});\n\ntype User = z.infer<typeof userSchema>;\n```\n\n## Validation\n```typescript\n// Parse (throws on error)\nconst user = userSchema.parse(data);\n\n// Safe parse (returns result object)\nconst result = userSchema.safeParse(data);\nif (result.success) {\n  console.log(result.data);\n} else {\n  console.error(result.error.issues);\n}\n```\n\n## Advanced Patterns\n```typescript\n// Refinements\nconst passwordSchema = z.string()\n  .min(8)\n  .regex(/[A-Z]/, 'Must contain uppercase')\n  .regex(/[0-9]/, 'Must contain number');\n\n// Transformations\nconst dateSchema = z.string().transform((s) => new Date(s));\n\n// Conditional validation\nconst formSchema = z.object({\n  type: z.enum(['email', 'phone']),\n  email: z.string().email().optional(),\n  phone: z.string().optional(),\n}).refine(\n  (data) => data.type === 'email' ? !!data.email : !!data.phone,\n  { message: 'Provide email or phone based on type' }\n);\n```",
+            "createdAt": "2026-02-03T18:57:41.949Z",
+            "updatedAt": "2026-02-03T18:57:41.949Z"
+        },
+        {
+            "id": "956e3546-678d-467a-9398-11ee3bd12715",
+            "title": "shadcn/ui Components",
+            "description": "Build UIs with shadcn/ui accessible component library.",
+            "content": "# shadcn/ui Components\n\nI help you use shadcn/ui for beautiful, accessible components.\n\n## Installation\n```bash\nnpx shadcn-ui@latest init\nnpx shadcn-ui@latest add button card dialog\n```\n\n## Using Components\n```tsx\nimport { Button } from '@/components/ui/button';\nimport { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';\nimport { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';\n\nfunction MyComponent() {\n  return (\n    <Card>\n      <CardHeader>\n        <CardTitle>Welcome</CardTitle>\n      </CardHeader>\n      <CardContent>\n        <Dialog>\n          <DialogTrigger asChild>\n            <Button>Open Dialog</Button>\n          </DialogTrigger>\n          <DialogContent>\n            <DialogHeader>\n              <DialogTitle>Dialog Title</DialogTitle>\n            </DialogHeader>\n            <p>Dialog content here</p>\n          </DialogContent>\n        </Dialog>\n      </CardContent>\n    </Card>\n  );\n}\n```\n\n## Customization\nComponents are copied to your project - customize freely:\n```tsx\n// components/ui/button.tsx\nconst buttonVariants = cva(\n  'inline-flex items-center justify-center rounded-md text-sm font-medium',\n  {\n    variants: {\n      variant: {\n        default: 'bg-primary text-primary-foreground hover:bg-primary/90',\n        destructive: 'bg-destructive text-destructive-foreground',\n        // Add your variants\n      },\n    },\n  }\n);\n```",
+            "createdAt": "2026-02-03T18:57:41.946Z",
+            "updatedAt": "2026-02-03T18:57:41.946Z"
+        },
+        {
+            "id": "322ed52a-f05f-4321-9368-37d4ac1d128a",
+            "title": "TailwindCSS Styling",
+            "description": "Style applications with TailwindCSS utility classes and patterns.",
+            "content": "# TailwindCSS Styling\n\nI help you style applications with TailwindCSS.\n\n## Component Patterns\n```tsx\n// Button with variants\nfunction Button({ variant = 'primary', children }) {\n  const variants = {\n    primary: 'bg-blue-500 hover:bg-blue-600 text-white',\n    secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-800',\n    outline: 'border border-gray-300 hover:bg-gray-50',\n  };\n\n  return (\n    <button className={`px-4 py-2 rounded-lg font-medium transition-colors ${variants[variant]}`}>\n      {children}\n    </button>\n  );\n}\n```\n\n## Responsive Design\n```tsx\n<div className=\"\n  grid\n  grid-cols-1 md:grid-cols-2 lg:grid-cols-3\n  gap-4 md:gap-6\n  p-4 md:p-8\n\">\n  {/* Cards */}\n</div>\n```\n\n## Dark Mode\n```tsx\n<div className=\"bg-white dark:bg-gray-900 text-gray-900 dark:text-white\">\n  <h1 className=\"text-2xl font-bold\">Hello</h1>\n</div>\n```\n\n## Custom Colors\n```javascript\n// tailwind.config.js\nmodule.exports = {\n  theme: {\n    extend: {\n      colors: {\n        brand: {\n          50: '#f0f9ff',\n          500: '#3b82f6',\n          900: '#1e3a8a',\n        },\n      },\n    },\n  },\n};\n```",
+            "createdAt": "2026-02-03T18:57:41.942Z",
+            "updatedAt": "2026-02-03T18:57:41.942Z"
+        },
+        {
+            "id": "f4c4814e-5910-4072-bd6a-ffe1b279e65c",
+            "title": "Next.js App Router",
+            "description": "Build with Next.js App Router, Server Components, and Server Actions.",
+            "content": "# Next.js App Router\n\nI help you build with Next.js App Router.\n\n## Route Structure\n```\napp/\n├── layout.tsx        # Root layout\n├── page.tsx          # Home page (/)\n├── about/\n│   └── page.tsx      # /about\n├── blog/\n│   ├── page.tsx      # /blog\n│   └── [slug]/\n│       └── page.tsx  # /blog/:slug\n└── api/\n    └── users/\n        └── route.ts  # API route\n```\n\n## Server Components\n```tsx\n// app/users/page.tsx (Server Component by default)\nasync function UsersPage() {\n  const users = await db.user.findMany();\n\n  return (\n    <ul>\n      {users.map(user => (\n        <li key={user.id}>{user.name}</li>\n      ))}\n    </ul>\n  );\n}\n```\n\n## Client Components\n```tsx\n'use client';\n\nimport { useState } from 'react';\n\nexport function Counter() {\n  const [count, setCount] = useState(0);\n  return <button onClick={() => setCount(c => c + 1)}>{count}</button>;\n}\n```\n\n## Server Actions\n```tsx\nasync function createUser(formData: FormData) {\n  'use server';\n\n  const name = formData.get('name') as string;\n  await db.user.create({ data: { name } });\n  revalidatePath('/users');\n}\n```",
+            "createdAt": "2026-02-03T18:57:41.870Z",
+            "updatedAt": "2026-02-03T18:57:41.870Z"
+        },
+        {
+            "id": "11222fa9-bd14-4013-91d7-4065c11a46c9",
+            "title": "Stripe Payment Integration",
+            "description": "Integrate Stripe for payments, subscriptions, and webhooks.",
+            "content": "# Stripe Payment Integration\n\nI help you integrate Stripe payments.\n\n## Stripe Setup\n```typescript\nimport Stripe from 'stripe';\n\nconst stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {\n  apiVersion: '2023-10-16',\n});\n```\n\n## Create Checkout Session\n```typescript\nasync function createCheckoutSession(priceId: string, userId: string) {\n  const session = await stripe.checkout.sessions.create({\n    mode: 'subscription',\n    payment_method_types: ['card'],\n    line_items: [{ price: priceId, quantity: 1 }],\n    success_url: `${process.env.APP_URL}/success?session_id={CHECKOUT_SESSION_ID}`,\n    cancel_url: `${process.env.APP_URL}/cancel`,\n    metadata: { userId },\n  });\n\n  return session.url;\n}\n```\n\n## Webhook Handler\n```typescript\nasync function handleWebhook(body: Buffer, signature: string) {\n  const event = stripe.webhooks.constructEvent(\n    body,\n    signature,\n    process.env.STRIPE_WEBHOOK_SECRET!\n  );\n\n  switch (event.type) {\n    case 'checkout.session.completed':\n      const session = event.data.object;\n      await activateSubscription(session.metadata.userId);\n      break;\n    case 'customer.subscription.deleted':\n      const subscription = event.data.object;\n      await cancelSubscription(subscription.metadata.userId);\n      break;\n  }\n}\n```",
+            "createdAt": "2026-02-03T18:57:41.866Z",
+            "updatedAt": "2026-02-03T18:57:41.866Z"
+        },
+        {
+            "id": "b1a4bfdf-cd9e-4dc9-8e33-6a5f174f7c31",
+            "title": "Redis Caching Patterns",
+            "description": "Implement caching patterns with Redis for performance.",
+            "content": "# Redis Caching Patterns\n\nI help you implement caching with Redis.\n\n## Redis Client\n```typescript\nimport Redis from 'ioredis';\n\nconst redis = new Redis(process.env.REDIS_URL);\n\n// Basic operations\nawait redis.set('key', 'value');\nawait redis.get('key');\nawait redis.del('key');\n\n// With expiration\nawait redis.setex('key', 3600, 'value'); // 1 hour TTL\n```\n\n## Cache-Aside Pattern\n```typescript\nasync function getUser(id: string): Promise<User> {\n  const cacheKey = `user:${id}`;\n\n  // Check cache\n  const cached = await redis.get(cacheKey);\n  if (cached) return JSON.parse(cached);\n\n  // Fetch from database\n  const user = await db.user.findUnique({ where: { id } });\n\n  // Store in cache\n  if (user) {\n    await redis.setex(cacheKey, 3600, JSON.stringify(user));\n  }\n\n  return user;\n}\n```\n\n## Cache Invalidation\n```typescript\nasync function updateUser(id: string, data: UpdateUserDto) {\n  const user = await db.user.update({ where: { id }, data });\n\n  // Invalidate cache\n  await redis.del(`user:${id}`);\n\n  return user;\n}\n```\n\n## Rate Limiting\n```typescript\nasync function checkRateLimit(userId: string, limit: number) {\n  const key = `ratelimit:${userId}`;\n  const count = await redis.incr(key);\n\n  if (count === 1) {\n    await redis.expire(key, 60); // 1 minute window\n  }\n\n  return count <= limit;\n}\n```",
+            "createdAt": "2026-02-03T18:57:41.862Z",
+            "updatedAt": "2026-02-03T18:57:41.862Z"
+        },
+        {
+            "id": "d6ed3144-fa6d-44f4-bcb5-ab205f0c7a13",
+            "title": "Prisma ORM",
+            "description": "Use Prisma ORM for type-safe database operations.",
+            "content": "# Prisma ORM\n\nI help you use Prisma for type-safe database access.\n\n## Schema Definition\n```prisma\n// schema.prisma\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\ngenerator client {\n  provider = \"prisma-client-js\"\n}\n\nmodel User {\n  id        String   @id @default(uuid())\n  email     String   @unique\n  name      String?\n  posts     Post[]\n  createdAt DateTime @default(now())\n}\n\nmodel Post {\n  id        String   @id @default(uuid())\n  title     String\n  content   String?\n  published Boolean  @default(false)\n  author    User     @relation(fields: [authorId], references: [id])\n  authorId  String\n}\n```\n\n## CRUD Operations\n```typescript\nimport { PrismaClient } from '@prisma/client';\nconst prisma = new PrismaClient();\n\n// Create\nconst user = await prisma.user.create({\n  data: { email: 'john@example.com', name: 'John' },\n});\n\n// Read with relations\nconst userWithPosts = await prisma.user.findUnique({\n  where: { id: '123' },\n  include: { posts: true },\n});\n\n// Update\nawait prisma.user.update({\n  where: { id: '123' },\n  data: { name: 'John Doe' },\n});\n\n// Delete\nawait prisma.user.delete({ where: { id: '123' } });\n```\n\n## Migrations\n```bash\nnpx prisma migrate dev --name add_posts\nnpx prisma migrate deploy\n```",
+            "createdAt": "2026-02-03T18:57:41.859Z",
+            "updatedAt": "2026-02-03T18:57:41.859Z"
+        },
+        {
+            "id": "42d2cfaf-ba58-4109-8088-530c47cc495c",
+            "title": "OpenAPI/Swagger Documentation",
+            "description": "Document APIs with OpenAPI/Swagger in NestJS applications.",
+            "content": "# OpenAPI/Swagger Documentation\n\nI help you document APIs with OpenAPI.\n\n## NestJS Swagger Setup\n```typescript\n// main.ts\nimport { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';\n\nconst config = new DocumentBuilder()\n  .setTitle('My API')\n  .setDescription('API documentation')\n  .setVersion('1.0')\n  .addBearerAuth()\n  .addTag('users')\n  .build();\n\nconst document = SwaggerModule.createDocument(app, config);\nSwaggerModule.setup('api/docs', app, document);\n```\n\n## Documenting Endpoints\n```typescript\n@ApiTags('users')\n@ApiBearerAuth()\n@Controller('users')\nexport class UsersController {\n  @Get(':id')\n  @ApiOperation({ summary: 'Get user by ID' })\n  @ApiParam({ name: 'id', description: 'User ID' })\n  @ApiResponse({ status: 200, type: UserDto })\n  @ApiResponse({ status: 404, description: 'User not found' })\n  findOne(@Param('id') id: string) {}\n}\n```\n\n## Documenting DTOs\n```typescript\nexport class CreateUserDto {\n  @ApiProperty({\n    description: 'User email address',\n    example: 'john@example.com',\n  })\n  @IsEmail()\n  email: string;\n\n  @ApiPropertyOptional({\n    description: 'User display name',\n    maxLength: 100,\n  })\n  @IsOptional()\n  name?: string;\n}\n```",
+            "createdAt": "2026-02-03T18:57:41.855Z",
+            "updatedAt": "2026-02-03T18:57:41.855Z"
+        },
+        {
+            "id": "04c0fc06-11b1-49f4-a340-5ac5d1e4b185",
+            "title": "GitHub Actions CI/CD",
+            "description": "Build CI/CD pipelines with GitHub Actions workflows.",
+            "content": "# GitHub Actions CI/CD\n\nI help you build CI/CD pipelines with GitHub Actions.\n\n## Basic Workflow\n```yaml\nname: CI/CD\non:\n  push:\n    branches: [main]\n  pull_request:\n    branches: [main]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 20\n          cache: 'npm'\n      - run: npm ci\n      - run: npm test\n\n  deploy:\n    needs: test\n    if: github.ref == 'refs/heads/main'\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - name: Deploy\n        run: ./deploy.sh\n        env:\n          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}\n          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}\n```\n\n## Matrix Testing\n```yaml\nstrategy:\n  matrix:\n    node: [18, 20, 22]\n    os: [ubuntu-latest, windows-latest]\nsteps:\n  - uses: actions/setup-node@v4\n    with:\n      node-version: ${{ matrix.node }}\n```\n\n## Reusable Workflows\n```yaml\n# .github/workflows/deploy.yml\non:\n  workflow_call:\n    inputs:\n      environment:\n        required: true\n        type: string\n```",
+            "createdAt": "2026-02-03T18:57:41.852Z",
+            "updatedAt": "2026-02-03T18:57:41.852Z"
+        },
+        {
+            "id": "6b96a9b2-7a16-4c4f-a628-5f8ef44d7f7c",
+            "title": "Monorepo Management",
+            "description": "Manage monorepos with Turborepo for efficient builds and development.",
+            "content": "# Monorepo Management\n\nI help you manage monorepos effectively.\n\n## Turborepo Setup\n```json\n// turbo.json\n{\n  \"$schema\": \"https://turbo.build/schema.json\",\n  \"pipeline\": {\n    \"build\": {\n      \"dependsOn\": [\"^build\"],\n      \"outputs\": [\"dist/**\", \".next/**\"]\n    },\n    \"test\": {\n      \"dependsOn\": [\"build\"]\n    },\n    \"lint\": {},\n    \"dev\": {\n      \"cache\": false,\n      \"persistent\": true\n    }\n  }\n}\n```\n\n## Workspace Structure\n```\nmonorepo/\n├── apps/\n│   ├── web/          # Next.js frontend\n│   ├── api/          # NestJS backend\n│   └── mobile/       # React Native app\n├── packages/\n│   ├── ui/           # Shared components\n│   ├── config/       # Shared configs\n│   └── types/        # Shared TypeScript types\n├── turbo.json\n└── package.json\n```\n\n## Shared Dependencies\n```json\n// Root package.json\n{\n  \"workspaces\": [\"apps/*\", \"packages/*\"],\n  \"devDependencies\": {\n    \"turbo\": \"latest\",\n    \"typescript\": \"^5.0.0\"\n  }\n}\n```\n\n## Commands\n```bash\nturbo build           # Build all packages\nturbo dev --filter=web  # Run specific app\nturbo lint --affected   # Only changed packages\n```",
+            "createdAt": "2026-02-03T18:57:41.848Z",
+            "updatedAt": "2026-02-03T18:57:41.848Z"
+        },
+        {
+            "id": "32459974-2ca4-4b58-aa07-c6634aad6128",
+            "title": "AWS CDK Infrastructure",
+            "description": "Define AWS infrastructure as code with CDK and TypeScript.",
+            "content": "# AWS CDK Infrastructure\n\nI help you define infrastructure as code with CDK.\n\n## CDK Stack\n```typescript\nimport * as cdk from 'aws-cdk-lib';\nimport * as ec2 from 'aws-cdk-lib/aws-ec2';\nimport * as ecs from 'aws-cdk-lib/aws-ecs';\nimport * as ecs_patterns from 'aws-cdk-lib/aws-ecs-patterns';\n\nexport class MyAppStack extends cdk.Stack {\n  constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {\n    super(scope, id, props);\n\n    // VPC\n    const vpc = new ec2.Vpc(this, 'VPC', {\n      maxAzs: 2,\n      natGateways: 1,\n    });\n\n    // ECS Cluster\n    const cluster = new ecs.Cluster(this, 'Cluster', { vpc });\n\n    // Fargate Service with ALB\n    new ecs_patterns.ApplicationLoadBalancedFargateService(this, 'Service', {\n      cluster,\n      taskImageOptions: {\n        image: ecs.ContainerImage.fromRegistry('my-app:latest'),\n        containerPort: 3000,\n        environment: {\n          NODE_ENV: 'production',\n        },\n      },\n      desiredCount: 2,\n      publicLoadBalancer: true,\n    });\n  }\n}\n```\n\n## Deploy\n```bash\nnpx cdk synth    # Generate CloudFormation\nnpx cdk diff     # Preview changes\nnpx cdk deploy   # Deploy stack\nnpx cdk destroy  # Tear down\n```\n\n## Best Practices\n- Use constructs for reusable patterns\n- Separate stacks by lifecycle\n- Use cdk.context.json for environment config\n- Enable cdk-nag for security checks",
+            "createdAt": "2026-02-03T18:57:41.842Z",
+            "updatedAt": "2026-02-03T18:57:41.842Z"
+        },
+        {
+            "id": "d1c77b9f-11fe-47cf-b57a-19b4170e798b",
+            "title": "AWS Secrets Management",
+            "description": "Manage secrets with AWS Parameter Store and Secrets Manager.",
+            "content": "# AWS Secrets Management\n\nI help you manage secrets securely.\n\n## SSM Parameter Store\n```typescript\nimport { SSMClient, GetParameterCommand, PutParameterCommand } from '@aws-sdk/client-ssm';\n\nconst ssm = new SSMClient({ region: process.env.AWS_REGION });\n\n// Get secret\nasync function getSecret(name: string): Promise<string> {\n  const response = await ssm.send(new GetParameterCommand({\n    Name: name,\n    WithDecryption: true,\n  }));\n  return response.Parameter!.Value!;\n}\n\n// Store secret\nasync function putSecret(name: string, value: string) {\n  await ssm.send(new PutParameterCommand({\n    Name: name,\n    Value: value,\n    Type: 'SecureString',\n    Overwrite: true,\n  }));\n}\n```\n\n## Secrets Manager\n```typescript\nimport { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';\n\nconst sm = new SecretsManagerClient({ region: process.env.AWS_REGION });\n\nasync function getSecretJSON(secretId: string) {\n  const response = await sm.send(new GetSecretValueCommand({\n    SecretId: secretId,\n  }));\n  return JSON.parse(response.SecretString!);\n}\n\n// Usage\nconst dbCreds = await getSecretJSON('prod/db/credentials');\nconst connectionString = `postgres://${dbCreds.username}:${dbCreds.password}@...`;\n```\n\n## When to Use Which\n| Service | Use Case |\n|---------|----------|\n| Parameter Store | Config values, feature flags, simple secrets |\n| Secrets Manager | Database credentials, API keys with rotation |",
+            "createdAt": "2026-02-03T18:57:41.783Z",
+            "updatedAt": "2026-02-03T18:57:41.783Z"
+        },
+        {
+            "id": "7f244227-6168-4e58-9399-4f29df6ca771",
+            "title": "AWS RDS Database",
+            "description": "Manage RDS PostgreSQL databases with security best practices.",
+            "content": "# AWS RDS Database\n\nI help you manage RDS databases.\n\n## RDS Instance (CloudFormation)\n```yaml\nRDSInstance:\n  Type: AWS::RDS::DBInstance\n  Properties:\n    DBInstanceIdentifier: my-app-db\n    DBInstanceClass: db.t3.micro\n    Engine: postgres\n    EngineVersion: '15'\n    MasterUsername: !Ref DBUsername\n    MasterUserPassword: !Ref DBPassword\n    AllocatedStorage: 20\n    StorageType: gp3\n    StorageEncrypted: true\n    MultiAZ: false\n    PubliclyAccessible: false\n    VPCSecurityGroups:\n      - !Ref DBSecurityGroup\n    DBSubnetGroupName: !Ref DBSubnetGroup\n    BackupRetentionPeriod: 7\n    DeletionProtection: true\n```\n\n## Connection with SSL\n```typescript\nimport { Pool } from 'pg';\nimport fs from 'fs';\n\nconst pool = new Pool({\n  connectionString: process.env.DATABASE_URL,\n  ssl: {\n    rejectUnauthorized: true,\n    ca: fs.readFileSync('rds-ca-2019-root.pem').toString(),\n  },\n});\n```\n\n## Best Practices\n- Enable encryption at rest\n- Use private subnets (no public access)\n- Enable automated backups\n- Use Parameter Store for credentials\n- Set up read replicas for scaling\n- Monitor with Performance Insights",
+            "createdAt": "2026-02-03T18:57:41.779Z",
+            "updatedAt": "2026-02-03T18:57:41.779Z"
+        },
+        {
+            "id": "50db836e-f36c-4651-8a29-61617fb94ebc",
+            "title": "AWS ECS Containers",
+            "description": "Deploy containerized applications with AWS ECS and Fargate.",
+            "content": "# AWS ECS Containers\n\nI help you deploy containers with ECS.\n\n## Task Definition\n```json\n{\n  \"family\": \"my-app\",\n  \"containerDefinitions\": [{\n    \"name\": \"app\",\n    \"image\": \"123456789.dkr.ecr.us-east-1.amazonaws.com/my-app:latest\",\n    \"portMappings\": [{\n      \"containerPort\": 3000,\n      \"protocol\": \"tcp\"\n    }],\n    \"environment\": [\n      { \"name\": \"NODE_ENV\", \"value\": \"production\" }\n    ],\n    \"secrets\": [\n      { \"name\": \"DATABASE_URL\", \"valueFrom\": \"arn:aws:ssm:...:parameter/db-url\" }\n    ],\n    \"logConfiguration\": {\n      \"logDriver\": \"awslogs\",\n      \"options\": {\n        \"awslogs-group\": \"/ecs/my-app\",\n        \"awslogs-region\": \"us-east-1\",\n        \"awslogs-stream-prefix\": \"ecs\"\n      }\n    }\n  }],\n  \"requiresCompatibilities\": [\"FARGATE\"],\n  \"networkMode\": \"awsvpc\",\n  \"cpu\": \"256\",\n  \"memory\": \"512\"\n}\n```\n\n## Service Definition\n```yaml\n# CloudFormation\nECSService:\n  Type: AWS::ECS::Service\n  Properties:\n    Cluster: !Ref ECSCluster\n    TaskDefinition: !Ref TaskDefinition\n    DesiredCount: 2\n    LaunchType: FARGATE\n    NetworkConfiguration:\n      AwsvpcConfiguration:\n        Subnets: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]\n        SecurityGroups: [!Ref SecurityGroup]\n    LoadBalancers:\n      - ContainerName: app\n        ContainerPort: 3000\n        TargetGroupArn: !Ref TargetGroup\n```",
+            "createdAt": "2026-02-03T18:57:41.776Z",
+            "updatedAt": "2026-02-03T18:57:41.776Z"
+        },
+        {
+            "id": "d4080701-d380-49e6-9d02-15852170a526",
+            "title": "AWS IAM Security",
+            "description": "Implement secure IAM policies with least privilege principle.",
+            "content": "# AWS IAM Security\n\nI help you implement secure IAM policies.\n\n## Least Privilege Policy\n```json\n{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"s3:GetObject\",\n        \"s3:PutObject\"\n      ],\n      \"Resource\": \"arn:aws:s3:::my-bucket/uploads/*\"\n    },\n    {\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"dynamodb:GetItem\",\n        \"dynamodb:PutItem\",\n        \"dynamodb:Query\"\n      ],\n      \"Resource\": \"arn:aws:dynamodb:*:*:table/MyTable\"\n    }\n  ]\n}\n```\n\n## Role-Based Access\n```json\n{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Effect\": \"Allow\",\n      \"Principal\": {\n        \"Service\": \"lambda.amazonaws.com\"\n      },\n      \"Action\": \"sts:AssumeRole\"\n    }\n  ]\n}\n```\n\n## Security Best Practices\n- Never use root credentials\n- Enable MFA for all users\n- Use roles instead of access keys\n- Apply least privilege principle\n- Rotate credentials regularly\n- Use AWS Organizations for multi-account\n- Enable CloudTrail for auditing",
+            "createdAt": "2026-02-03T18:57:41.771Z",
+            "updatedAt": "2026-02-03T18:57:41.771Z"
+        },
+        {
+            "id": "851c67c9-8e3e-4db0-bd3e-a275e8bba5bc",
+            "title": "AWS CloudWatch Monitoring",
+            "description": "Monitor applications with CloudWatch metrics, logs, and alarms.",
+            "content": "# AWS CloudWatch Monitoring\n\nI help you monitor applications with CloudWatch.\n\n## Custom Metrics\n```typescript\nimport { CloudWatchClient, PutMetricDataCommand } from '@aws-sdk/client-cloudwatch';\n\nconst cloudwatch = new CloudWatchClient({ region: process.env.AWS_REGION });\n\nasync function publishMetric(name: string, value: number, unit: string) {\n  await cloudwatch.send(new PutMetricDataCommand({\n    Namespace: 'MyApp',\n    MetricData: [{\n      MetricName: name,\n      Value: value,\n      Unit: unit,\n      Dimensions: [\n        { Name: 'Environment', Value: process.env.NODE_ENV },\n      ],\n    }],\n  }));\n}\n\n// Usage\nawait publishMetric('OrdersProcessed', 1, 'Count');\nawait publishMetric('ProcessingTime', 234, 'Milliseconds');\n```\n\n## Structured Logging\n```typescript\n// CloudWatch-friendly JSON logs\nfunction log(level: string, message: string, data: object = {}) {\n  console.log(JSON.stringify({\n    timestamp: new Date().toISOString(),\n    level,\n    message,\n    ...data,\n  }));\n}\n\nlog('INFO', 'Order processed', { orderId: '123', amount: 99.99 });\n```\n\n## CloudWatch Alarms\n```yaml\n# CloudFormation\nErrorAlarm:\n  Type: AWS::CloudWatch::Alarm\n  Properties:\n    AlarmName: HighErrorRate\n    MetricName: Errors\n    Namespace: AWS/Lambda\n    Statistic: Sum\n    Period: 300\n    EvaluationPeriods: 1\n    Threshold: 10\n    ComparisonOperator: GreaterThanThreshold\n```",
+            "createdAt": "2026-02-03T18:57:41.767Z",
+            "updatedAt": "2026-02-03T18:57:41.767Z"
+        },
+        {
+            "id": "8fed205f-dc1d-4fa8-9d39-4bce6526d94e",
+            "title": "AWS SQS Message Queues",
+            "description": "Build reliable message queues with AWS SQS for async processing.",
+            "content": "# AWS SQS Message Queues\n\nI help you build reliable message queues with SQS.\n\n## SQS Client\n```typescript\nimport { SQSClient, SendMessageCommand, ReceiveMessageCommand, DeleteMessageCommand } from '@aws-sdk/client-sqs';\n\nconst sqs = new SQSClient({ region: process.env.AWS_REGION });\nconst QUEUE_URL = process.env.SQS_QUEUE_URL!;\n```\n\n## Send Message\n```typescript\nasync function sendMessage(payload: object) {\n  await sqs.send(new SendMessageCommand({\n    QueueUrl: QUEUE_URL,\n    MessageBody: JSON.stringify(payload),\n    MessageGroupId: 'default', // For FIFO queues\n    MessageDeduplicationId: uuid(), // For FIFO queues\n  }));\n}\n```\n\n## Process Messages\n```typescript\nasync function processMessages() {\n  const response = await sqs.send(new ReceiveMessageCommand({\n    QueueUrl: QUEUE_URL,\n    MaxNumberOfMessages: 10,\n    WaitTimeSeconds: 20, // Long polling\n  }));\n\n  for (const message of response.Messages || []) {\n    try {\n      const payload = JSON.parse(message.Body!);\n      await handleMessage(payload);\n\n      // Delete after successful processing\n      await sqs.send(new DeleteMessageCommand({\n        QueueUrl: QUEUE_URL,\n        ReceiptHandle: message.ReceiptHandle,\n      }));\n    } catch (error) {\n      console.error('Failed to process message:', error);\n      // Message will return to queue after visibility timeout\n    }\n  }\n}\n```",
+            "createdAt": "2026-02-03T18:57:41.764Z",
+            "updatedAt": "2026-02-03T18:57:41.764Z"
+        },
+        {
+            "id": "90840fa1-ad7e-4cdb-9b5b-8650e9e73dfa",
+            "title": "AWS DynamoDB",
+            "description": "Work with DynamoDB for NoSQL data with single table design.",
+            "content": "# AWS DynamoDB\n\nI help you work with DynamoDB for NoSQL data.\n\n## DynamoDB Client\n```typescript\nimport { DynamoDBClient } from '@aws-sdk/client-dynamodb';\nimport { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';\n\nconst client = new DynamoDBClient({ region: process.env.AWS_REGION });\nconst docClient = DynamoDBDocumentClient.from(client);\n```\n\n## CRUD Operations\n```typescript\n// Create\nawait docClient.send(new PutCommand({\n  TableName: 'Users',\n  Item: { pk: 'USER#123', sk: 'PROFILE', name: 'John', email: 'john@example.com' },\n}));\n\n// Read\nconst result = await docClient.send(new GetCommand({\n  TableName: 'Users',\n  Key: { pk: 'USER#123', sk: 'PROFILE' },\n}));\n\n// Query (all items for a user)\nconst items = await docClient.send(new QueryCommand({\n  TableName: 'Users',\n  KeyConditionExpression: 'pk = :pk',\n  ExpressionAttributeValues: { ':pk': 'USER#123' },\n}));\n```\n\n## Single Table Design\n```\n| pk          | sk           | Data |\n|-------------|--------------|------|\n| USER#123    | PROFILE      | User info |\n| USER#123    | ORDER#001    | Order info |\n| USER#123    | ORDER#002    | Order info |\n| ORDER#001   | ORDER#001    | Order details |\n```",
+            "createdAt": "2026-02-03T18:57:41.760Z",
+            "updatedAt": "2026-02-03T18:57:41.760Z"
+        },
+        {
+            "id": "1a6f2501-d972-498a-b0e8-cab18bd65129",
+            "title": "AWS Lambda Functions",
+            "description": "Build serverless functions with AWS Lambda and best practices.",
+            "content": "# AWS Lambda Functions\n\nI help you build serverless functions with AWS Lambda.\n\n## Lambda Handler\n```typescript\nimport { APIGatewayProxyHandler } from 'aws-lambda';\n\nexport const handler: APIGatewayProxyHandler = async (event) => {\n  try {\n    const body = JSON.parse(event.body || '{}');\n\n    // Process request\n    const result = await processData(body);\n\n    return {\n      statusCode: 200,\n      headers: {\n        'Content-Type': 'application/json',\n        'Access-Control-Allow-Origin': '*',\n      },\n      body: JSON.stringify(result),\n    };\n  } catch (error) {\n    console.error('Error:', error);\n    return {\n      statusCode: 500,\n      body: JSON.stringify({ error: 'Internal server error' }),\n    };\n  }\n};\n```\n\n## Environment Variables\n```yaml\n# serverless.yml\nfunctions:\n  myFunction:\n    handler: handler.handler\n    environment:\n      DATABASE_URL: ${env:DATABASE_URL}\n      API_KEY: ${ssm:/my-app/api-key}\n```\n\n## Best Practices\n- Keep functions focused (single responsibility)\n- Minimize cold starts (keep dependencies small)\n- Use environment variables for config\n- Log with structured JSON\n- Set appropriate timeouts and memory",
+            "createdAt": "2026-02-03T18:57:41.757Z",
+            "updatedAt": "2026-02-03T18:57:41.757Z"
+        },
+        {
+            "id": "fc60fb05-5bd5-458f-af9a-72ecf9a74767",
+            "title": "AWS S3 File Storage",
+            "description": "Work with AWS S3 for file uploads, downloads, and presigned URLs.",
+            "content": "# AWS S3 File Storage\n\nI help you work with S3 for file storage.\n\n## S3 Client Setup\n```typescript\nimport { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';\nimport { getSignedUrl } from '@aws-sdk/s3-request-presigner';\n\nconst s3 = new S3Client({\n  region: process.env.AWS_REGION,\n  credentials: {\n    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,\n    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,\n  },\n});\n```\n\n## Upload File\n```typescript\nasync function uploadFile(key: string, body: Buffer, contentType: string) {\n  await s3.send(new PutObjectCommand({\n    Bucket: process.env.S3_BUCKET,\n    Key: key,\n    Body: body,\n    ContentType: contentType,\n  }));\n\n  return `https://${process.env.S3_BUCKET}.s3.amazonaws.com/${key}`;\n}\n```\n\n## Presigned URLs\n```typescript\n// Upload URL (client uploads directly)\nasync function getUploadUrl(key: string) {\n  const command = new PutObjectCommand({\n    Bucket: process.env.S3_BUCKET,\n    Key: key,\n  });\n  return getSignedUrl(s3, command, { expiresIn: 3600 });\n}\n\n// Download URL (private files)\nasync function getDownloadUrl(key: string) {\n  const command = new GetObjectCommand({\n    Bucket: process.env.S3_BUCKET,\n    Key: key,\n  });\n  return getSignedUrl(s3, command, { expiresIn: 3600 });\n}\n```",
+            "createdAt": "2026-02-03T18:57:41.753Z",
+            "updatedAt": "2026-02-03T18:57:41.753Z"
+        },
+        {
+            "id": "ad98cac8-0f01-4f90-9412-1f06cd8f506e",
+            "title": "Natural Language Processing",
+            "description": "Process and analyze text with NLP techniques and transformers.",
+            "content": "# Natural Language Processing\n\nI help you process and analyze text data.\n\n## Text Preprocessing\n```python\nimport re\nimport nltk\nfrom nltk.corpus import stopwords\nfrom nltk.stem import WordNetLemmatizer\n\nnltk.download(['stopwords', 'wordnet', 'punkt'])\n\ndef preprocess_text(text: str) -> str:\n    # Lowercase\n    text = text.lower()\n    # Remove special characters\n    text = re.sub(r'[^a-zA-Z\\s]', '', text)\n    # Tokenize\n    tokens = nltk.word_tokenize(text)\n    # Remove stopwords\n    stop_words = set(stopwords.words('english'))\n    tokens = [t for t in tokens if t not in stop_words]\n    # Lemmatize\n    lemmatizer = WordNetLemmatizer()\n    tokens = [lemmatizer.lemmatize(t) for t in tokens]\n    return ' '.join(tokens)\n```\n\n## Sentiment Analysis\n```python\nfrom transformers import pipeline\n\nsentiment = pipeline(\"sentiment-analysis\")\nresult = sentiment(\"I love this product!\")\n# [{'label': 'POSITIVE', 'score': 0.9998}]\n```\n\n## Text Classification\n```python\nfrom sklearn.feature_extraction.text import TfidfVectorizer\nfrom sklearn.naive_bayes import MultinomialNB\n\n# Vectorize text\nvectorizer = TfidfVectorizer(max_features=5000)\nX_train_tfidf = vectorizer.fit_transform(X_train)\n\n# Train classifier\nclf = MultinomialNB()\nclf.fit(X_train_tfidf, y_train)\n\n# Predict\nX_test_tfidf = vectorizer.transform(X_test)\npredictions = clf.predict(X_test_tfidf)\n```",
+            "createdAt": "2026-02-03T18:57:41.749Z",
+            "updatedAt": "2026-02-03T18:57:41.749Z"
+        },
+        {
+            "id": "83ca07bf-ae6e-4508-b16b-32ba36ea6e2f",
+            "title": "Data Pipeline Design",
+            "description": "Build reliable ETL data pipelines with validation and scheduling.",
+            "content": "# Data Pipeline Design\n\nI help you build reliable data pipelines.\n\n## ETL with Python\n```python\nfrom datetime import datetime\nimport pandas as pd\n\ndef extract(source: str) -> pd.DataFrame:\n    \"\"\"Extract data from source.\"\"\"\n    return pd.read_csv(source)\n\ndef transform(df: pd.DataFrame) -> pd.DataFrame:\n    \"\"\"Clean and transform data.\"\"\"\n    df = df.dropna()\n    df['amount'] = df['amount'].astype(float)\n    df['date'] = pd.to_datetime(df['date'])\n    df['year_month'] = df['date'].dt.to_period('M')\n    return df\n\ndef load(df: pd.DataFrame, destination: str) -> None:\n    \"\"\"Load data to destination.\"\"\"\n    df.to_parquet(destination, index=False)\n\ndef run_pipeline():\n    \"\"\"Run the full ETL pipeline.\"\"\"\n    raw = extract('data/raw.csv')\n    cleaned = transform(raw)\n    load(cleaned, 'data/processed.parquet')\n    print(f\"Pipeline completed: {len(cleaned)} rows processed\")\n```\n\n## Scheduling\n```python\n# Using APScheduler\nfrom apscheduler.schedulers.blocking import BlockingScheduler\n\nscheduler = BlockingScheduler()\n\n@scheduler.scheduled_job('cron', hour=6)\ndef daily_job():\n    run_pipeline()\n\nscheduler.start()\n```\n\n## Data Validation\n```python\nimport pandera as pa\n\nschema = pa.DataFrameSchema({\n    \"id\": pa.Column(int, unique=True),\n    \"amount\": pa.Column(float, pa.Check.greater_than(0)),\n    \"email\": pa.Column(str, pa.Check.str_matches(r'^[\\w.-]+@[\\w.-]+\\.\\w+$')),\n})\n\nvalidated_df = schema.validate(df)\n```",
+            "createdAt": "2026-02-03T18:57:41.745Z",
+            "updatedAt": "2026-02-03T18:57:41.745Z"
+        },
+        {
+            "id": "dfa4e029-309d-43e8-8646-77b03c83e7ae",
+            "title": "A/B Testing Framework",
+            "description": "Design and analyze A/B tests with proper statistical methods.",
+            "content": "# A/B Testing Framework\n\nI help you design and analyze A/B tests.\n\n## Sample Size Calculation\n```python\nfrom statsmodels.stats.power import TTestIndPower\n\n# Calculate required sample size\npower_analysis = TTestIndPower()\nsample_size = power_analysis.solve_power(\n    effect_size=0.2,  # Minimum detectable effect\n    alpha=0.05,       # Significance level\n    power=0.8,        # Statistical power\n    alternative='two-sided'\n)\nprint(f\"Required sample size per group: {int(sample_size)}\")\n```\n\n## Conversion Rate Test\n```python\nfrom scipy.stats import chi2_contingency\n\n# Contingency table\n#              Converted  Not Converted\n# Control         50          450\n# Treatment       70          430\n\nobserved = [[50, 450], [70, 430]]\nchi2, p_value, dof, expected = chi2_contingency(observed)\n\n# Conversion rates\ncontrol_rate = 50 / 500\ntreatment_rate = 70 / 500\nlift = (treatment_rate - control_rate) / control_rate\nprint(f\"Lift: {lift:.1%}\")\n```\n\n## Continuous Metrics (T-Test)\n```python\nfrom scipy.stats import ttest_ind\n\n# Compare means\nt_stat, p_value = ttest_ind(control_values, treatment_values)\n\n# Effect size (Cohen's d)\ndef cohens_d(group1, group2):\n    n1, n2 = len(group1), len(group2)\n    var1, var2 = group1.var(), group2.var()\n    pooled_std = np.sqrt(((n1-1)*var1 + (n2-1)*var2) / (n1+n2-2))\n    return (group1.mean() - group2.mean()) / pooled_std\n```",
+            "createdAt": "2026-02-03T18:57:41.741Z",
+            "updatedAt": "2026-02-03T18:57:41.741Z"
+        },
+        {
+            "id": "0d8aecc0-1e27-4022-a04d-8565de9aa4d0",
+            "title": "Time Series Analysis",
+            "description": "Analyze and forecast time series data with decomposition and ARIMA.",
+            "content": "# Time Series Analysis\n\nI help you analyze and forecast time series data.\n\n## Time Series Basics\n```python\nimport pandas as pd\n\n# Create time series\ndf['date'] = pd.to_datetime(df['date'])\ndf = df.set_index('date')\ndf = df.sort_index()\n\n# Resample\ndf.resample('D').sum()  # Daily\ndf.resample('W').mean()  # Weekly\ndf.resample('M').sum()  # Monthly\n```\n\n## Trend and Seasonality\n```python\nfrom statsmodels.tsa.seasonal import seasonal_decompose\n\n# Decomposition\nresult = seasonal_decompose(df['value'], model='additive', period=12)\nresult.plot()\n\n# Access components\ntrend = result.trend\nseasonal = result.seasonal\nresidual = result.resid\n```\n\n## Simple Forecasting\n```python\nfrom statsmodels.tsa.holtwinters import ExponentialSmoothing\n\n# Holt-Winters\nmodel = ExponentialSmoothing(\n    df['value'],\n    seasonal_periods=12,\n    trend='add',\n    seasonal='add'\n)\nfitted = model.fit()\nforecast = fitted.forecast(12)\n```\n\n## ARIMA Model\n```python\nfrom statsmodels.tsa.arima.model import ARIMA\n\nmodel = ARIMA(df['value'], order=(1, 1, 1))\nfitted = model.fit()\nforecast = fitted.forecast(steps=12)\n```",
+            "createdAt": "2026-02-03T18:57:41.687Z",
+            "updatedAt": "2026-02-03T18:57:41.687Z"
+        },
+        {
+            "id": "7011e3c2-018b-4bab-bd2f-02f35d320a2b",
+            "title": "Statistical Analysis",
+            "description": "Apply statistical methods with Python scipy for hypothesis testing.",
+            "content": "# Statistical Analysis\n\nI help you apply statistical methods to data.\n\n## Descriptive Statistics\n```python\nimport scipy.stats as stats\n\n# Central tendency\ndf['value'].mean()\ndf['value'].median()\nstats.mode(df['value'])\n\n# Dispersion\ndf['value'].std()\ndf['value'].var()\ndf['value'].quantile([0.25, 0.5, 0.75])\n```\n\n## Hypothesis Testing\n```python\n# T-test (comparing two means)\nt_stat, p_value = stats.ttest_ind(group_a, group_b)\n\n# Chi-square (categorical association)\nchi2, p_value, dof, expected = stats.chi2_contingency(contingency_table)\n\n# ANOVA (comparing multiple groups)\nf_stat, p_value = stats.f_oneway(group_a, group_b, group_c)\n```\n\n## Correlation Analysis\n```python\n# Pearson correlation\ndf[['x', 'y', 'z']].corr()\n\n# Spearman correlation (non-linear)\ndf[['x', 'y']].corr(method='spearman')\n\n# Significance test\nr, p_value = stats.pearsonr(df['x'], df['y'])\n```\n\n## Interpretation\n| p-value | Interpretation |\n|---------|----------------|\n| < 0.01 | Strong evidence against H0 |\n| 0.01-0.05 | Moderate evidence |\n| 0.05-0.10 | Weak evidence |\n| > 0.10 | Insufficient evidence |",
+            "createdAt": "2026-02-03T18:57:41.683Z",
+            "updatedAt": "2026-02-03T18:57:41.683Z"
+        },
+        {
+            "id": "7fd6d7bc-cddc-4970-8d2c-e2a1060306e9",
+            "title": "Jupyter Notebook Best Practices",
+            "description": "Create reproducible, well-structured Jupyter notebooks.",
+            "content": "# Jupyter Notebook Best Practices\n\nI help you create reproducible, maintainable notebooks.\n\n## Notebook Structure\n```markdown\n1. Title and Description\n2. Setup and Imports\n3. Data Loading\n4. Exploratory Data Analysis\n5. Data Cleaning\n6. Analysis/Modeling\n7. Results and Conclusions\n```\n\n## Standard Imports Cell\n```python\n# Standard library\nimport os\nimport sys\nfrom datetime import datetime\n\n# Data processing\nimport numpy as np\nimport pandas as pd\n\n# Visualization\nimport matplotlib.pyplot as plt\nimport seaborn as sns\n\n# Settings\npd.set_option('display.max_columns', 100)\nplt.style.use('seaborn-v0_8-whitegrid')\n%matplotlib inline\n```\n\n## Best Practices\n1. **Clear outputs** before committing\n2. **Run cells in order** - ensure reproducibility\n3. **Use markdown** for documentation\n4. **Modularize** - extract functions for reuse\n5. **Version control** - use .gitignore for checkpoints\n\n## Magic Commands\n```python\n%timeit expensive_function()  # Time execution\n%load_ext autoreload\n%autoreload 2  # Auto-reload modules\n%%sql  # SQL magic\n```",
+            "createdAt": "2026-02-03T18:57:41.680Z",
+            "updatedAt": "2026-02-03T18:57:41.680Z"
+        },
+        {
+            "id": "fd511086-393b-4597-bf01-3496a6522aaa",
+            "title": "Machine Learning Basics",
+            "description": "Build machine learning models with scikit-learn and best practices.",
+            "content": "# Machine Learning Basics\n\nI help you build machine learning models with scikit-learn.\n\n## ML Workflow\n```python\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import accuracy_score, classification_report\n\n# 1. Split data\nX_train, X_test, y_train, y_test = train_test_split(\n    X, y, test_size=0.2, random_state=42\n)\n\n# 2. Preprocess\nscaler = StandardScaler()\nX_train_scaled = scaler.fit_transform(X_train)\nX_test_scaled = scaler.transform(X_test)\n\n# 3. Train model\nmodel = RandomForestClassifier(n_estimators=100, random_state=42)\nmodel.fit(X_train_scaled, y_train)\n\n# 4. Evaluate\ny_pred = model.predict(X_test_scaled)\nprint(classification_report(y_test, y_pred))\n```\n\n## Common Models\n| Task | Models |\n|------|--------|\n| Classification | Logistic Regression, Random Forest, XGBoost |\n| Regression | Linear Regression, Random Forest, XGBoost |\n| Clustering | K-Means, DBSCAN, Hierarchical |\n\n## Feature Engineering\n```python\n# One-hot encoding\npd.get_dummies(df, columns=['category'])\n\n# Binning\npd.cut(df['age'], bins=[0, 18, 35, 50, 100])\n\n# Log transform\ndf['log_amount'] = np.log1p(df['amount'])\n```",
+            "createdAt": "2026-02-03T18:57:41.676Z",
+            "updatedAt": "2026-02-03T18:57:41.676Z"
+        },
+        {
+            "id": "601504f8-7101-4349-b46e-c17ce8a0cc0c",
+            "title": "SQL Analytics Queries",
+            "description": "Write analytical SQL with window functions, CTEs, and cohort analysis.",
+            "content": "# SQL Analytics Queries\n\nI help you write analytical SQL queries.\n\n## Window Functions\n```sql\n-- Running total\nSELECT\n  date,\n  amount,\n  SUM(amount) OVER (ORDER BY date) as running_total\nFROM orders;\n\n-- Rank within group\nSELECT\n  name,\n  department,\n  salary,\n  RANK() OVER (PARTITION BY department ORDER BY salary DESC) as dept_rank\nFROM employees;\n\n-- Moving average\nSELECT\n  date,\n  value,\n  AVG(value) OVER (\n    ORDER BY date\n    ROWS BETWEEN 6 PRECEDING AND CURRENT ROW\n  ) as moving_avg_7d\nFROM metrics;\n```\n\n## CTEs for Readability\n```sql\nWITH monthly_sales AS (\n  SELECT\n    DATE_TRUNC('month', created_at) as month,\n    SUM(amount) as total\n  FROM orders\n  GROUP BY 1\n),\ngrowth AS (\n  SELECT\n    month,\n    total,\n    LAG(total) OVER (ORDER BY month) as prev_month,\n    total - LAG(total) OVER (ORDER BY month) as growth\n  FROM monthly_sales\n)\nSELECT * FROM growth;\n```\n\n## Cohort Analysis\n```sql\nWITH cohorts AS (\n  SELECT\n    user_id,\n    DATE_TRUNC('month', MIN(created_at)) as cohort_month\n  FROM orders\n  GROUP BY 1\n)\nSELECT\n  cohort_month,\n  DATE_TRUNC('month', o.created_at) as order_month,\n  COUNT(DISTINCT o.user_id) as users\nFROM orders o\nJOIN cohorts c ON o.user_id = c.user_id\nGROUP BY 1, 2;\n```",
+            "createdAt": "2026-02-03T18:57:41.672Z",
+            "updatedAt": "2026-02-03T18:57:41.672Z"
+        },
+        {
+            "id": "a11979b7-07fc-4442-806c-dc746d42d0cf",
+            "title": "Data Visualization Expert",
+            "description": "Create data visualizations with matplotlib and seaborn.",
+            "content": "# Data Visualization Expert\n\nI help you create compelling data visualizations.\n\n## Matplotlib Basics\n```python\nimport matplotlib.pyplot as plt\n\nfig, ax = plt.subplots(figsize=(10, 6))\nax.plot(df['date'], df['value'], label='Sales')\nax.set_title('Sales Over Time')\nax.set_xlabel('Date')\nax.set_ylabel('Sales ($)')\nax.legend()\nplt.tight_layout()\nplt.savefig('chart.png', dpi=150)\n```\n\n## Seaborn Statistical Plots\n```python\nimport seaborn as sns\n\n# Distribution\nsns.histplot(data=df, x='value', kde=True)\n\n# Relationships\nsns.scatterplot(data=df, x='x', y='y', hue='category')\n\n# Comparisons\nsns.boxplot(data=df, x='category', y='value')\n\n# Heatmap\nsns.heatmap(df.corr(), annot=True, cmap='coolwarm')\n```\n\n## Chart Types\n| Chart | Best For |\n|-------|----------|\n| Line | Trends over time |\n| Bar | Comparisons |\n| Scatter | Relationships |\n| Histogram | Distributions |\n| Box plot | Statistical summaries |\n| Heatmap | Correlations |\n\n## Best Practices\n- Start with the question you want to answer\n- Choose appropriate chart types\n- Label axes clearly\n- Use color purposefully\n- Keep it simple",
+            "createdAt": "2026-02-03T18:57:41.669Z",
+            "updatedAt": "2026-02-03T18:57:41.669Z"
+        },
+        {
+            "id": "ba50c062-c64e-439c-93fd-7dba77d0c310",
+            "title": "Python Data Analysis",
+            "description": "Analyze data with Python pandas for cleaning, aggregation, and filtering.",
+            "content": "# Python Data Analysis\n\nI help you analyze data with Python and pandas.\n\n## Loading Data\n```python\nimport pandas as pd\nimport numpy as np\n\n# Read from various sources\ndf = pd.read_csv('data.csv')\ndf = pd.read_json('data.json')\ndf = pd.read_sql(query, connection)\n\n# Quick overview\ndf.head()\ndf.info()\ndf.describe()\n```\n\n## Data Cleaning\n```python\n# Handle missing values\ndf.dropna()\ndf.fillna(0)\ndf.fillna(df.mean())\n\n# Remove duplicates\ndf.drop_duplicates()\n\n# Convert types\ndf['date'] = pd.to_datetime(df['date'])\ndf['amount'] = df['amount'].astype(float)\n```\n\n## Aggregation & Grouping\n```python\n# Group by\ndf.groupby('category')['amount'].sum()\ndf.groupby(['year', 'month']).agg({\n    'revenue': 'sum',\n    'orders': 'count',\n    'avg_order': 'mean'\n})\n\n# Pivot tables\npd.pivot_table(df, values='sales', index='region', columns='product')\n```\n\n## Filtering\n```python\n# Boolean indexing\ndf[df['amount'] > 100]\ndf[(df['status'] == 'active') & (df['amount'] > 50)]\ndf.query('amount > 100 and status == \"active\"')\n```",
+            "createdAt": "2026-02-03T18:57:41.665Z",
+            "updatedAt": "2026-02-03T18:57:41.665Z"
+        },
+        {
+            "id": "04e737f8-eb61-41b1-b8b7-8e877d732c69",
+            "title": "Mobile App Security",
+            "description": "Implement security best practices in mobile apps.",
+            "content": "# Mobile App Security\n\nI help you secure mobile applications.\n\n## Secure Storage\n```typescript\nimport * as SecureStore from 'expo-secure-store';\n\nasync function saveToken(token: string) {\n  await SecureStore.setItemAsync('auth_token', token);\n}\n\nasync function getToken() {\n  return await SecureStore.getItemAsync('auth_token');\n}\n```\n\n## Certificate Pinning\n```typescript\n// For React Native CLI apps\nimport { fetch } from 'react-native-ssl-pinning';\n\nconst response = await fetch('https://api.example.com/data', {\n  method: 'GET',\n  sslPinning: {\n    certs: ['cert1', 'cert2'],\n  },\n});\n```\n\n## Biometric Authentication\n```typescript\nimport * as LocalAuthentication from 'expo-local-authentication';\n\nasync function authenticateWithBiometrics() {\n  const hasHardware = await LocalAuthentication.hasHardwareAsync();\n  const isEnrolled = await LocalAuthentication.isEnrolledAsync();\n\n  if (!hasHardware || !isEnrolled) return false;\n\n  const result = await LocalAuthentication.authenticateAsync({\n    promptMessage: 'Authenticate to continue',\n    fallbackLabel: 'Use passcode',\n  });\n\n  return result.success;\n}\n```\n\n## Security Best Practices\n- Never store sensitive data in AsyncStorage\n- Use secure storage for tokens\n- Implement certificate pinning in production\n- Validate all server responses\n- Use HTTPS everywhere",
+            "createdAt": "2026-02-03T18:57:41.661Z",
+            "updatedAt": "2026-02-03T18:57:41.661Z"
+        },
+        {
+            "id": "3c1ee771-12fe-4ace-b54b-2af3446bc2ce",
+            "title": "Mobile Gestures & Animations",
+            "description": "Create fluid gestures and animations with Reanimated and Gesture Handler.",
+            "content": "# Mobile Gestures & Animations\n\nI help you create fluid gestures and animations.\n\n## Reanimated Animations\n```tsx\nimport Animated, {\n  useSharedValue,\n  useAnimatedStyle,\n  withSpring,\n} from 'react-native-reanimated';\n\nfunction AnimatedButton() {\n  const scale = useSharedValue(1);\n\n  const animatedStyle = useAnimatedStyle(() => ({\n    transform: [{ scale: scale.value }],\n  }));\n\n  const handlePressIn = () => {\n    scale.value = withSpring(0.95);\n  };\n\n  const handlePressOut = () => {\n    scale.value = withSpring(1);\n  };\n\n  return (\n    <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut}>\n      <Animated.View style={[styles.button, animatedStyle]}>\n        <Text>Press Me</Text>\n      </Animated.View>\n    </Pressable>\n  );\n}\n```\n\n## Gesture Handler\n```tsx\nimport { Gesture, GestureDetector } from 'react-native-gesture-handler';\n\nfunction SwipeableCard() {\n  const translateX = useSharedValue(0);\n\n  const pan = Gesture.Pan()\n    .onUpdate((e) => {\n      translateX.value = e.translationX;\n    })\n    .onEnd(() => {\n      if (Math.abs(translateX.value) > 100) {\n        translateX.value = withTiming(translateX.value > 0 ? 500 : -500);\n      } else {\n        translateX.value = withSpring(0);\n      }\n    });\n\n  return (\n    <GestureDetector gesture={pan}>\n      <Animated.View style={animatedStyle} />\n    </GestureDetector>\n  );\n}\n```",
+            "createdAt": "2026-02-03T18:57:41.658Z",
+            "updatedAt": "2026-02-03T18:57:41.658Z"
+        },
+        {
+            "id": "f8d2a85f-0ec7-4400-a978-3dc5f9bf8cee",
+            "title": "Mobile Image Handling",
+            "description": "Optimize image loading, picking, and uploading in mobile apps.",
+            "content": "# Mobile Image Handling\n\nI help you optimize images in mobile apps.\n\n## Optimized Image Component\n```tsx\nimport { Image } from 'expo-image';\n\nfunction OptimizedImage({ uri, style }: Props) {\n  return (\n    <Image\n      source={{ uri }}\n      style={style}\n      contentFit=\"cover\"\n      transition={200}\n      placeholder={blurhash}\n      cachePolicy=\"memory-disk\"\n    />\n  );\n}\n```\n\n## Image Picker\n```typescript\nimport * as ImagePicker from 'expo-image-picker';\n\nasync function pickImage() {\n  const result = await ImagePicker.launchImageLibraryAsync({\n    mediaTypes: ImagePicker.MediaTypeOptions.Images,\n    allowsEditing: true,\n    aspect: [1, 1],\n    quality: 0.8,\n  });\n\n  if (!result.canceled) {\n    return result.assets[0];\n  }\n}\n```\n\n## Upload with Progress\n```typescript\nasync function uploadImage(uri: string, onProgress: (p: number) => void) {\n  const formData = new FormData();\n  formData.append('file', {\n    uri,\n    type: 'image/jpeg',\n    name: 'photo.jpg',\n  } as any);\n\n  const response = await axios.post('/upload', formData, {\n    headers: { 'Content-Type': 'multipart/form-data' },\n    onUploadProgress: (e) => {\n      onProgress(Math.round((e.loaded * 100) / (e.total ?? 1)));\n    },\n  });\n\n  return response.data;\n}\n```",
+            "createdAt": "2026-02-03T18:57:41.654Z",
+            "updatedAt": "2026-02-03T18:57:41.654Z"
+        },
+        {
+            "id": "6c750756-ed2b-4dfb-9bea-f3ffecbffec1",
+            "title": "Mobile Offline Support",
+            "description": "Build offline-capable apps with network detection and cache persistence.",
+            "content": "# Mobile Offline Support\n\nI help you build offline-capable mobile apps.\n\n## Detect Network Status\n```typescript\nimport NetInfo from '@react-native-community/netinfo';\n\nfunction useNetworkStatus() {\n  const [isOnline, setIsOnline] = useState(true);\n\n  useEffect(() => {\n    const unsubscribe = NetInfo.addEventListener((state) => {\n      setIsOnline(state.isConnected ?? false);\n    });\n    return unsubscribe;\n  }, []);\n\n  return isOnline;\n}\n```\n\n## Offline-First with React Query\n```typescript\nimport { onlineManager, QueryClient } from '@tanstack/react-query';\nimport NetInfo from '@react-native-community/netinfo';\n\n// Sync online status\nonlineManager.setEventListener((setOnline) => {\n  return NetInfo.addEventListener((state) => {\n    setOnline(!!state.isConnected);\n  });\n});\n\n// Persist cache\nconst queryClient = new QueryClient({\n  defaultOptions: {\n    queries: {\n      networkMode: 'offlineFirst',\n      gcTime: 1000 * 60 * 60 * 24, // 24 hours\n    },\n    mutations: {\n      networkMode: 'offlineFirst',\n    },\n  },\n});\n```\n\n## AsyncStorage Cache\n```typescript\nimport AsyncStorage from '@react-native-async-storage/async-storage';\nimport { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';\n\nconst asyncStoragePersister = createAsyncStoragePersister({\n  storage: AsyncStorage,\n});\n```",
+            "createdAt": "2026-02-03T18:57:41.649Z",
+            "updatedAt": "2026-02-03T18:57:41.649Z"
+        },
+        {
+            "id": "4f04c03b-15ef-41bf-8ea9-45596fdcf465",
+            "title": "Mobile Push Notifications",
+            "description": "Implement push notifications with Expo and handle notification responses.",
+            "content": "# Mobile Push Notifications\n\nI help you implement push notifications in mobile apps.\n\n## Expo Notifications Setup\n```typescript\nimport * as Notifications from 'expo-notifications';\n\n// Configure notification handler\nNotifications.setNotificationHandler({\n  handleNotification: async () => ({\n    shouldShowAlert: true,\n    shouldPlaySound: true,\n    shouldSetBadge: true,\n  }),\n});\n\n// Register for push notifications\nasync function registerForPushNotifications() {\n  const { status } = await Notifications.requestPermissionsAsync();\n  if (status !== 'granted') return null;\n\n  const token = await Notifications.getExpoPushTokenAsync({\n    projectId: 'your-project-id',\n  });\n  return token.data;\n}\n```\n\n## Handle Notifications\n```typescript\nuseEffect(() => {\n  // Received while app is foregrounded\n  const subscription = Notifications.addNotificationReceivedListener(\n    (notification) => {\n      console.log('Received:', notification);\n    }\n  );\n\n  // User tapped notification\n  const responseSubscription = Notifications.addNotificationResponseReceivedListener(\n    (response) => {\n      const { data } = response.notification.request.content;\n      navigation.navigate('Details', { id: data.id });\n    }\n  );\n\n  return () => {\n    subscription.remove();\n    responseSubscription.remove();\n  };\n}, []);\n```",
+            "createdAt": "2026-02-03T18:57:41.645Z",
+            "updatedAt": "2026-02-03T18:57:41.645Z"
+        },
+        {
+            "id": "afed3a6b-9ee9-43ba-a3d5-9ebd7cc369d3",
+            "title": "Mobile API Integration",
+            "description": "Integrate REST APIs with axios, React Query, and proper error handling.",
+            "content": "# Mobile API Integration\n\nI help you integrate APIs in mobile apps with proper error handling.\n\n## API Client Setup\n```typescript\nimport axios from 'axios';\nimport { useAuthStore } from './store';\n\nconst api = axios.create({\n  baseURL: 'https://api.example.com',\n  timeout: 10000,\n});\n\napi.interceptors.request.use((config) => {\n  const token = useAuthStore.getState().token;\n  if (token) {\n    config.headers.Authorization = `Bearer ${token}`;\n  }\n  return config;\n});\n\napi.interceptors.response.use(\n  (response) => response,\n  (error) => {\n    if (error.response?.status === 401) {\n      useAuthStore.getState().logout();\n    }\n    return Promise.reject(error);\n  }\n);\n```\n\n## React Query Integration\n```tsx\nexport function useUser(id: string) {\n  return useQuery({\n    queryKey: ['user', id],\n    queryFn: () => api.get(`/users/${id}`).then(r => r.data),\n    retry: 2,\n    staleTime: 60000,\n  });\n}\n\nexport function useUpdateUser() {\n  const queryClient = useQueryClient();\n\n  return useMutation({\n    mutationFn: (data: UpdateUserDto) => api.patch('/users/me', data),\n    onSuccess: () => {\n      queryClient.invalidateQueries({ queryKey: ['user'] });\n    },\n  });\n}\n```",
+            "createdAt": "2026-02-03T18:57:41.641Z",
+            "updatedAt": "2026-02-03T18:57:41.641Z"
+        },
+        {
+            "id": "8dca3837-f347-4afc-8997-de0352d214f5",
+            "title": "Mobile Form Handling",
+            "description": "Build accessible, validated forms in React Native with keyboard handling.",
+            "content": "# Mobile Form Handling\n\nI help you build accessible, user-friendly forms in mobile apps.\n\n## React Hook Form in React Native\n```tsx\nimport { useForm, Controller } from 'react-hook-form';\nimport { zodResolver } from '@hookform/resolvers/zod';\n\nconst schema = z.object({\n  email: z.string().email('Invalid email'),\n  password: z.string().min(8, 'Min 8 characters'),\n});\n\nfunction LoginForm() {\n  const { control, handleSubmit, formState: { errors } } = useForm({\n    resolver: zodResolver(schema),\n  });\n\n  return (\n    <View>\n      <Controller\n        control={control}\n        name=\"email\"\n        render={({ field: { onChange, value } }) => (\n          <TextInput\n            placeholder=\"Email\"\n            value={value}\n            onChangeText={onChange}\n            keyboardType=\"email-address\"\n            autoCapitalize=\"none\"\n          />\n        )}\n      />\n      {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}\n    </View>\n  );\n}\n```\n\n## Keyboard Handling\n```tsx\n<KeyboardAvoidingView\n  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}\n  style={styles.container}\n>\n  <ScrollView keyboardShouldPersistTaps=\"handled\">\n    {/* Form content */}\n  </ScrollView>\n</KeyboardAvoidingView>\n```",
+            "createdAt": "2026-02-03T18:57:41.565Z",
+            "updatedAt": "2026-02-03T18:57:41.565Z"
+        },
+        {
+            "id": "cf467c06-c683-4e04-bc3a-aaee36885333",
+            "title": "Mobile Navigation Patterns",
+            "description": "Implement navigation patterns including tabs, stacks, and deep linking.",
+            "content": "# Mobile Navigation Patterns\n\nI help you implement navigation patterns in mobile apps.\n\n## Tab Navigation\n```tsx\nconst Tab = createBottomTabNavigator();\n\nfunction TabNavigator() {\n  return (\n    <Tab.Navigator>\n      <Tab.Screen\n        name=\"Home\"\n        component={HomeScreen}\n        options={{\n          tabBarIcon: ({ color }) => <HomeIcon color={color} />,\n        }}\n      />\n      <Tab.Screen name=\"Profile\" component={ProfileScreen} />\n    </Tab.Navigator>\n  );\n}\n```\n\n## Stack Navigation with Auth\n```tsx\nfunction RootNavigator() {\n  const { user } = useAuthStore();\n\n  return (\n    <Stack.Navigator screenOptions={{ headerShown: false }}>\n      {user ? (\n        <Stack.Screen name=\"Main\" component={TabNavigator} />\n      ) : (\n        <Stack.Screen name=\"Auth\" component={AuthNavigator} />\n      )}\n    </Stack.Navigator>\n  );\n}\n```\n\n## Deep Linking\n```tsx\nconst linking = {\n  prefixes: ['myapp://', 'https://myapp.com'],\n  config: {\n    screens: {\n      Home: '',\n      Details: 'details/:id',\n      Profile: 'profile',\n    },\n  },\n};\n\n<NavigationContainer linking={linking}>\n  {/* ... */}\n</NavigationContainer>\n```",
+            "createdAt": "2026-02-03T18:57:41.561Z",
+            "updatedAt": "2026-02-03T18:57:41.561Z"
+        },
+        {
+            "id": "b585f9ed-5ae1-4761-a206-a31dc3b77624",
+            "title": "Mobile App State Management",
+            "description": "Manage state effectively in React Native apps with Zustand and React Query.",
+            "content": "# Mobile App State Management\n\nI help you manage state effectively in mobile apps.\n\n## Local State with useState\n```tsx\nconst [isLoading, setIsLoading] = useState(false);\nconst [data, setData] = useState<User[]>([]);\n```\n\n## Zustand for Global State\n```typescript\nimport { create } from 'zustand';\nimport { persist, createJSONStorage } from 'zustand/middleware';\nimport AsyncStorage from '@react-native-async-storage/async-storage';\n\ninterface AuthStore {\n  user: User | null;\n  token: string | null;\n  login: (user: User, token: string) => void;\n  logout: () => void;\n}\n\nexport const useAuthStore = create<AuthStore>()(\n  persist(\n    (set) => ({\n      user: null,\n      token: null,\n      login: (user, token) => set({ user, token }),\n      logout: () => set({ user: null, token: null }),\n    }),\n    {\n      name: 'auth-storage',\n      storage: createJSONStorage(() => AsyncStorage),\n    }\n  )\n);\n```\n\n## React Query for Server State\n```tsx\nconst { data, isLoading, refetch } = useQuery({\n  queryKey: ['users'],\n  queryFn: fetchUsers,\n  staleTime: 5 * 60 * 1000, // 5 minutes\n});\n```",
+            "createdAt": "2026-02-03T18:57:41.557Z",
+            "updatedAt": "2026-02-03T18:57:41.557Z"
+        },
+        {
+            "id": "e6c576ac-c183-4d01-8b00-21876c346fd9",
+            "title": "React Native Foundations",
+            "description": "Build cross-platform mobile apps with React Native and Expo.",
+            "content": "# React Native Foundations\n\nI help you build cross-platform mobile apps with React Native.\n\n## Project Setup\n```bash\nnpx create-expo-app MyApp --template blank-typescript\ncd MyApp && npx expo start\n```\n\n## Core Components\n```tsx\nimport { View, Text, StyleSheet, TouchableOpacity } from 'react-native';\n\nexport function Button({ onPress, title }: ButtonProps) {\n  return (\n    <TouchableOpacity style={styles.button} onPress={onPress}>\n      <Text style={styles.text}>{title}</Text>\n    </TouchableOpacity>\n  );\n}\n\nconst styles = StyleSheet.create({\n  button: {\n    backgroundColor: '#3b82f6',\n    padding: 16,\n    borderRadius: 8,\n  },\n  text: {\n    color: '#fff',\n    fontWeight: '600',\n    textAlign: 'center',\n  },\n});\n```\n\n## Navigation (React Navigation)\n```tsx\nconst Stack = createNativeStackNavigator();\n\nfunction App() {\n  return (\n    <NavigationContainer>\n      <Stack.Navigator>\n        <Stack.Screen name=\"Home\" component={HomeScreen} />\n        <Stack.Screen name=\"Details\" component={DetailsScreen} />\n      </Stack.Navigator>\n    </NavigationContainer>\n  );\n}\n```\n\n## Platform-Specific Code\n```tsx\nimport { Platform } from 'react-native';\n\nconst styles = StyleSheet.create({\n  container: {\n    paddingTop: Platform.OS === 'ios' ? 44 : 0,\n  },\n});\n```",
+            "createdAt": "2026-02-03T18:57:41.554Z",
+            "updatedAt": "2026-02-03T18:57:41.554Z"
+        },
+        {
+            "id": "74cb3767-ded1-4b27-b729-3ceffec38ad6",
+            "title": "Event-Driven Architecture Guide",
+            "description": "Builds loosely-coupled systems with event-driven architecture.",
+            "content": "# Event-Driven Architecture Guide\n\nI help you build loosely-coupled, scalable systems.\n\n## NestJS Event Emitter\n```typescript\n// Define event\nexport class UserCreatedEvent {\n  constructor(public readonly user: User) {}\n}\n\n// Emit event\n@Injectable()\nexport class UserService {\n  constructor(private eventEmitter: EventEmitter2) {}\n\n  async createUser(dto: CreateUserDto) {\n    const user = await this.userRepository.create(dto);\n    this.eventEmitter.emit('user.created', new UserCreatedEvent(user));\n    return user;\n  }\n}\n\n// Handle event\n@Injectable()\nexport class UserEventHandler {\n  @OnEvent('user.created')\n  async handleUserCreated(event: UserCreatedEvent) {\n    await this.emailService.sendWelcome(event.user);\n    await this.analyticsService.trackSignup(event.user);\n  }\n}\n```\n\n## Benefits\n- Loose coupling between services\n- Easy to add new handlers\n- Async processing by default\n- Better testability\n\n## Best Practices\n- Use typed events\n- Handle failures gracefully\n- Log event processing\n- Consider message queues for reliability",
+            "createdAt": "2026-02-03T18:57:41.550Z",
+            "updatedAt": "2026-02-03T18:57:41.550Z"
+        },
+        {
+            "id": "6caa1e6e-dbb8-48dd-b1ce-1df93d8e783e",
+            "title": "Dependency Injection Patterns",
+            "description": "Leverages dependency injection for testable, maintainable code.",
+            "content": "# Dependency Injection Patterns\n\nI help you leverage DI for testable, maintainable code.\n\n## NestJS Providers\n```typescript\n@Injectable()\nexport class UserService {\n  constructor(\n    private readonly userRepository: UserRepository,\n    private readonly emailService: EmailService,\n  ) {}\n\n  async createUser(dto: CreateUserDto) {\n    const user = await this.userRepository.create(dto);\n    await this.emailService.sendWelcome(user);\n    return user;\n  }\n}\n```\n\n## Custom Providers\n```typescript\n// Value provider\n{ provide: 'CONFIG', useValue: { apiUrl: 'https://api.example.com' } }\n\n// Factory provider\n{\n  provide: 'CONNECTION',\n  useFactory: async (config: ConfigService) => {\n    return createConnection(config.get('DATABASE_URL'));\n  },\n  inject: [ConfigService],\n}\n\n// Class provider\n{ provide: LoggerService, useClass: ProdLoggerService }\n```\n\n## Testing with DI\n```typescript\nconst module = await Test.createTestingModule({\n  providers: [\n    UserService,\n    { provide: UserRepository, useValue: mockRepository },\n    { provide: EmailService, useValue: mockEmailService },\n  ],\n}).compile();\n```",
+            "createdAt": "2026-02-03T18:57:41.546Z",
+            "updatedAt": "2026-02-03T18:57:41.546Z"
+        },
+        {
+            "id": "de94c185-0ad4-4688-9e7b-035c653dda1e",
+            "title": "Feature Flag Implementation",
+            "description": "Implements feature flags for safe, gradual feature releases.",
+            "content": "# Feature Flag Implementation\n\nI help you implement feature flags for safe releases.\n\n## Simple Feature Flags\n```typescript\nconst featureFlags = {\n  NEW_DASHBOARD: process.env.FEATURE_NEW_DASHBOARD === 'true',\n  BETA_FEATURES: process.env.FEATURE_BETA === 'true',\n};\n\n// Usage\nif (featureFlags.NEW_DASHBOARD) {\n  return <NewDashboard />;\n}\nreturn <OldDashboard />;\n```\n\n## User-Based Flags\n```typescript\nasync function isFeatureEnabled(userId: string, feature: string) {\n  const flag = await db.featureFlags.findFirst({\n    where: { name: feature },\n  });\n\n  if (!flag) return false;\n\n  // Global enable\n  if (flag.enabledForAll) return true;\n\n  // Percentage rollout\n  if (flag.percentage > 0) {\n    const hash = hashUserId(userId);\n    return hash % 100 < flag.percentage;\n  }\n\n  // Allowlist\n  return flag.allowedUsers.includes(userId);\n}\n```\n\n## Best Practices\n- Clean up old flags\n- Monitor flag usage\n- Test both paths\n- Document flag purposes",
+            "createdAt": "2026-02-03T18:57:41.542Z",
+            "updatedAt": "2026-02-03T18:57:41.542Z"
+        },
+        {
+            "id": "c6db980f-f878-4b1b-8828-440507daf139",
+            "title": "Data Serialization Expert",
+            "description": "Controls data transformation and field exposure in API responses.",
+            "content": "# Data Serialization Expert\n\nI help you control data transformation and exposure.\n\n## NestJS Class Transformer\n```typescript\nimport { Exclude, Expose, Transform } from 'class-transformer';\n\nexport class UserDto {\n  @Expose()\n  id: string;\n\n  @Expose()\n  email: string;\n\n  @Exclude()\n  password: string;\n\n  @Expose()\n  @Transform(({ value }) => value?.toISOString())\n  createdAt: Date;\n\n  @Expose({ groups: ['admin'] })\n  isAdmin: boolean;\n}\n```\n\n## Global Serialization\n```typescript\napp.useGlobalInterceptors(\n  new ClassSerializerInterceptor(app.get(Reflector), {\n    excludeExtraneousValues: true,\n  })\n);\n```\n\n## Nested Serialization\n```typescript\n@Expose()\n@Type(() => PostDto)\nposts: PostDto[];\n```\n\n## Best Practices\n- Never expose sensitive fields\n- Use DTOs for all responses\n- Version your response formats\n- Document transformations",
+            "createdAt": "2026-02-03T18:57:41.479Z",
+            "updatedAt": "2026-02-03T18:57:41.479Z"
+        },
+        {
+            "id": "2c8a2caa-19f7-4b3b-9914-f8cea848fe94",
+            "title": "Pagination Implementation",
+            "description": "Implements efficient pagination with cursor and offset strategies.",
+            "content": "# Pagination Implementation\n\nI help you implement efficient pagination.\n\n## Cursor-Based (Recommended)\n```typescript\nasync function getPostsPaginated(cursor?: string, limit = 20) {\n  const query = db.select().from(posts).limit(limit + 1);\n\n  if (cursor) {\n    query.where(lt(posts.createdAt, cursor));\n  }\n\n  const results = await query.orderBy(desc(posts.createdAt));\n\n  const hasMore = results.length > limit;\n  const items = hasMore ? results.slice(0, -1) : results;\n\n  return {\n    items,\n    nextCursor: hasMore ? items[items.length - 1].createdAt : null,\n  };\n}\n```\n\n## Offset-Based (Simple)\n```typescript\nasync function getPostsOffset(page = 1, limit = 20) {\n  const offset = (page - 1) * limit;\n\n  const [items, total] = await Promise.all([\n    db.select().from(posts).limit(limit).offset(offset),\n    db.select({ count: count() }).from(posts),\n  ]);\n\n  return {\n    items,\n    pagination: {\n      page,\n      limit,\n      total: total[0].count,\n      totalPages: Math.ceil(total[0].count / limit),\n    },\n  };\n}\n```\n\n## When to Use\n- Cursor: Large datasets, real-time feeds\n- Offset: Small datasets, admin panels",
+            "createdAt": "2026-02-03T18:57:41.476Z",
+            "updatedAt": "2026-02-03T18:57:41.476Z"
+        },
+        {
+            "id": "46966094-d335-4691-a506-aa5d63ed2fd3",
+            "title": "Search Implementation Guide",
+            "description": "Implements search functionality with PostgreSQL full-text search.",
+            "content": "# Search Implementation Guide\n\nI help you implement effective search functionality.\n\n## PostgreSQL Full-Text Search\n```sql\n-- Add search vector column\nALTER TABLE posts ADD COLUMN search_vector tsvector;\n\n-- Create index\nCREATE INDEX posts_search_idx ON posts USING gin(search_vector);\n\n-- Update trigger\nCREATE TRIGGER posts_search_update\n  BEFORE INSERT OR UPDATE ON posts\n  FOR EACH ROW EXECUTE FUNCTION\n  tsvector_update_trigger(search_vector, 'pg_catalog.english', title, content);\n\n-- Search query\nSELECT * FROM posts\nWHERE search_vector @@ plainto_tsquery('english', 'search terms')\nORDER BY ts_rank(search_vector, plainto_tsquery('english', 'search terms')) DESC;\n```\n\n## Typeahead/Autocomplete\n```typescript\n// Use trigram similarity for fuzzy matching\nSELECT * FROM users\nWHERE name % 'search'  -- Trigram similarity\nORDER BY similarity(name, 'search') DESC\nLIMIT 10;\n```\n\n## Search Features\n- Fuzzy matching\n- Typo tolerance\n- Faceted search\n- Highlighting\n- Suggestions",
+            "createdAt": "2026-02-03T18:57:41.472Z",
+            "updatedAt": "2026-02-03T18:57:41.472Z"
+        },
+        {
+            "id": "5c32e6f4-ece6-48f2-854a-d8b8ce9258fd",
+            "title": "Background Job Processor",
+            "description": "Implements reliable background job processing with BullMQ.",
+            "content": "# Background Job Processor\n\nI help you implement reliable background jobs.\n\n## BullMQ Setup\n```typescript\nimport { Queue, Worker } from 'bullmq';\n\nconst emailQueue = new Queue('emails', {\n  connection: redisConnection,\n});\n\n// Add job\nawait emailQueue.add('send-welcome', {\n  userId: user.id,\n  email: user.email,\n}, {\n  attempts: 3,\n  backoff: { type: 'exponential', delay: 1000 },\n});\n\n// Process jobs\nconst worker = new Worker('emails', async (job) => {\n  switch (job.name) {\n    case 'send-welcome':\n      await sendWelcomeEmail(job.data);\n      break;\n  }\n}, { connection: redisConnection });\n```\n\n## Job Types\n- **Immediate**: Process ASAP\n- **Delayed**: Process after delay\n- **Recurring**: Cron-like schedules\n- **Prioritized**: High/low priority queues\n\n## Best Practices\n- Make jobs idempotent\n- Set appropriate timeouts\n- Monitor queue health\n- Handle dead letter jobs",
+            "createdAt": "2026-02-03T18:57:41.469Z",
+            "updatedAt": "2026-02-03T18:57:41.469Z"
+        },
+        {
+            "id": "2ca7a899-89e5-4cea-98ab-4713d1b45afa",
+            "title": "Webhook Handler Implementation",
+            "description": "Builds secure webhook endpoints with signature verification.",
+            "content": "# Webhook Handler Implementation\n\nI help you build secure webhook endpoints.\n\n## Stripe Webhook Handler\n```typescript\n@Controller('webhooks')\nexport class WebhooksController {\n  @Post('stripe')\n  async handleStripe(\n    @Headers('stripe-signature') signature: string,\n    @Body() rawBody: Buffer,\n  ) {\n    let event: Stripe.Event;\n\n    try {\n      event = stripe.webhooks.constructEvent(\n        rawBody,\n        signature,\n        process.env.STRIPE_WEBHOOK_SECRET,\n      );\n    } catch (err) {\n      throw new BadRequestException('Invalid signature');\n    }\n\n    switch (event.type) {\n      case 'checkout.session.completed':\n        await this.handleCheckoutComplete(event.data.object);\n        break;\n      case 'customer.subscription.updated':\n        await this.handleSubscriptionUpdate(event.data.object);\n        break;\n    }\n\n    return { received: true };\n  }\n}\n```\n\n## Security Requirements\n- Verify webhook signatures\n- Use HTTPS endpoints\n- Respond quickly (< 30s)\n- Implement idempotency\n\n## Error Handling\n- Return 200 for received (even if processing fails)\n- Queue processing for long operations\n- Retry logic for failed processing",
+            "createdAt": "2026-02-03T18:57:41.465Z",
+            "updatedAt": "2026-02-03T18:57:41.465Z"
+        },
+        {
+            "id": "dafa1e41-6641-476e-9731-ee6a07213c60",
+            "title": "Email Service Integration",
+            "description": "Integrates transactional email services like SendGrid.",
+            "content": "# Email Service Integration\n\nI help you integrate transactional email services.\n\n## SendGrid Integration\n```typescript\nimport sgMail from '@sendgrid/mail';\n\nsgMail.setApiKey(process.env.SENDGRID_API_KEY);\n\nasync function sendWelcomeEmail(user: User) {\n  await sgMail.send({\n    to: user.email,\n    from: 'hello@bridgemind.co',\n    templateId: 'd-template-id',\n    dynamicTemplateData: {\n      name: user.name,\n      verifyUrl: `https://app.bridgemind.co/verify/${user.token}`,\n    },\n  });\n}\n```\n\n## Email Types\n| Type | Use Case |\n|------|----------|\n| Transactional | Password reset, verification |\n| Notification | Order updates, alerts |\n| Marketing | Newsletters, promotions |\n\n## Best Practices\n- Use templates for consistency\n- Include unsubscribe links\n- Monitor delivery rates\n- Handle bounces and complaints\n\n## Testing\n```typescript\n// Mock in tests\njest.mock('@sendgrid/mail');\n```",
+            "createdAt": "2026-02-03T18:57:41.462Z",
+            "updatedAt": "2026-02-03T18:57:41.462Z"
+        },
+        {
+            "id": "ed7cdd00-3e98-496f-9977-ffd6ee0d1ab5",
+            "title": "File Upload Handler",
+            "description": "Handles file uploads securely with validation.",
+            "content": "# File Upload Handler\n\nI help you handle file uploads securely.\n\n## NestJS File Upload\n```typescript\n@Controller('files')\nexport class FilesController {\n  @Post('upload')\n  @UseInterceptors(FileInterceptor('file', {\n    storage: diskStorage({\n      destination: './uploads',\n      filename: (req, file, cb) => {\n        const uniqueName = `${uuid()}-${file.originalname}`;\n        cb(null, uniqueName);\n      },\n    }),\n    fileFilter: (req, file, cb) => {\n      if (!file.mimetype.match(/^image\\/(jpg|jpeg|png|gif)$/)) {\n        cb(new BadRequestException('Invalid file type'), false);\n      }\n      cb(null, true);\n    },\n    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB\n  }))\n  uploadFile(@UploadedFile() file: Express.Multer.File) {\n    return { filename: file.filename };\n  }\n}\n```\n\n## S3 Upload\n```typescript\nconst command = new PutObjectCommand({\n  Bucket: 'my-bucket',\n  Key: `uploads/${filename}`,\n  Body: buffer,\n  ContentType: mimetype,\n});\nawait s3Client.send(command);\n```\n\n## Security\n- Validate file types by content, not extension\n- Limit file sizes\n- Scan for malware\n- Store outside web root",
+            "createdAt": "2026-02-03T18:57:41.458Z",
+            "updatedAt": "2026-02-03T18:57:41.458Z"
+        },
+        {
+            "id": "58bcb094-6708-401d-90d1-f8331b8070d3",
+            "title": "Authentication Flow Designer",
+            "description": "Implements secure JWT authentication with refresh tokens.",
+            "content": "# Authentication Flow Designer\n\nI help you implement secure authentication.\n\n## JWT Authentication Flow\n```\n1. User submits credentials\n2. Server validates and returns tokens\n3. Client stores tokens securely\n4. Client sends access token with requests\n5. Server validates token\n```\n\n## Token Strategy\n```typescript\n// Access token: short-lived (15 min)\nconst accessToken = jwt.sign(\n  { userId: user.id },\n  ACCESS_SECRET,\n  { expiresIn: '15m' }\n);\n\n// Refresh token: long-lived (7 days)\nconst refreshToken = jwt.sign(\n  { userId: user.id },\n  REFRESH_SECRET,\n  { expiresIn: '7d' }\n);\n```\n\n## Token Storage\n- Access token: Memory (JavaScript variable)\n- Refresh token: HTTP-only cookie\n\n## Refresh Flow\n```typescript\n// When access token expires\nconst response = await fetch('/auth/refresh', {\n  credentials: 'include', // Send refresh cookie\n});\nconst { accessToken } = await response.json();\n```\n\n## Security Best Practices\n- Use HTTPS only\n- Implement CSRF protection\n- Rotate refresh tokens\n- Invalidate on logout",
+            "createdAt": "2026-02-03T18:57:41.454Z",
+            "updatedAt": "2026-02-03T18:57:41.454Z"
+        },
+        {
+            "id": "296829cc-0761-4832-9241-b618cc085d5b",
+            "title": "Form Validation Patterns",
+            "description": "Builds robust form validation with React Hook Form and Zod.",
+            "content": "# Form Validation Patterns\n\nI help you build robust form validation.\n\n## React Hook Form + Zod\n```typescript\nimport { useForm } from 'react-hook-form';\nimport { zodResolver } from '@hookform/resolvers/zod';\nimport { z } from 'zod';\n\nconst schema = z.object({\n  email: z.string().email('Invalid email'),\n  password: z.string().min(8, 'Min 8 characters'),\n});\n\ntype FormData = z.infer<typeof schema>;\n\nfunction LoginForm() {\n  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({\n    resolver: zodResolver(schema),\n  });\n\n  return (\n    <form onSubmit={handleSubmit(onSubmit)}>\n      <input {...register('email')} />\n      {errors.email && <span>{errors.email.message}</span>}\n    </form>\n  );\n}\n```\n\n## Validation Patterns\n- Client-side for UX\n- Server-side for security\n- Same schema shared (Zod)\n\n## Common Validations\n```typescript\nz.string().email()\nz.string().min(8).max(100)\nz.string().regex(/pattern/)\nz.number().positive()\nz.date().min(new Date())\n```",
+            "createdAt": "2026-02-03T18:57:41.450Z",
+            "updatedAt": "2026-02-03T18:57:41.450Z"
+        },
+        {
+            "id": "6adea07b-8dba-454a-95a5-6dcf6ac1dc35",
+            "title": "Caching Strategy Designer",
+            "description": "Implements effective caching strategies with Redis.",
+            "content": "# Caching Strategy Designer\n\nI help you implement effective caching.\n\n## Cache Patterns\n\n### Cache-Aside\n```typescript\nasync function getUser(id: string): Promise<User> {\n  // Check cache first\n  const cached = await cache.get(`user:${id}`);\n  if (cached) return JSON.parse(cached);\n\n  // Fetch from database\n  const user = await db.users.findById(id);\n\n  // Store in cache\n  await cache.set(`user:${id}`, JSON.stringify(user), 'EX', 3600);\n\n  return user;\n}\n```\n\n### Cache Invalidation\n```typescript\nasync function updateUser(id: string, data: UpdateUserDto) {\n  await db.users.update(id, data);\n  await cache.del(`user:${id}`);\n}\n```\n\n## TTL Strategies\n| Data Type | TTL |\n|-----------|-----|\n| Session data | 30 minutes |\n| User profiles | 1 hour |\n| Static content | 24 hours |\n| API responses | 5 minutes |\n\n## Cache Keys\n```\nuser:123\nuser:123:posts\nposts:list:page:1\n```",
+            "createdAt": "2026-02-03T18:57:41.446Z",
+            "updatedAt": "2026-02-03T18:57:41.446Z"
+        },
+        {
+            "id": "46a35cf5-be74-47c8-b8ae-ab593ffe39ed",
+            "title": "WebSocket Implementation Guide",
+            "description": "Implements real-time WebSocket features with Socket.io.",
+            "content": "# WebSocket Implementation Guide\n\nI help you build real-time features.\n\n## NestJS WebSocket Gateway\n```typescript\n@WebSocketGateway({\n  cors: { origin: '*' },\n})\nexport class ChatGateway {\n  @WebSocketServer()\n  server: Server;\n\n  @SubscribeMessage('message')\n  handleMessage(\n    @MessageBody() data: MessageDto,\n    @ConnectedSocket() client: Socket,\n  ) {\n    this.server.emit('message', data);\n  }\n\n  handleConnection(client: Socket) {\n    console.log('Client connected:', client.id);\n  }\n\n  handleDisconnect(client: Socket) {\n    console.log('Client disconnected:', client.id);\n  }\n}\n```\n\n## Client-Side (React)\n```typescript\nimport { io } from 'socket.io-client';\n\nconst socket = io('http://localhost:3000');\n\nsocket.on('message', (data) => {\n  console.log('Received:', data);\n});\n\nsocket.emit('message', { text: 'Hello!' });\n```\n\n## Best Practices\n- Implement reconnection logic\n- Use rooms for targeted messages\n- Authenticate WebSocket connections\n- Handle connection state in UI",
+            "createdAt": "2026-02-03T18:57:41.441Z",
+            "updatedAt": "2026-02-03T18:57:41.441Z"
+        },
+        {
+            "id": "b2491ea5-671e-4feb-bfc7-a33f41befea8",
+            "title": "API Rate Limiting Implementation",
+            "description": "Implements API rate limiting to protect against abuse.",
+            "content": "# API Rate Limiting Implementation\n\nI help you protect your API from abuse.\n\n## NestJS Rate Limiting\n```typescript\nimport { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';\n\n@Module({\n  imports: [\n    ThrottlerModule.forRoot({\n      ttl: 60,          // Time window in seconds\n      limit: 100,       // Max requests per window\n    }),\n  ],\n  providers: [\n    { provide: APP_GUARD, useClass: ThrottlerGuard },\n  ],\n})\nexport class AppModule {}\n```\n\n## Per-Endpoint Limits\n```typescript\n@Controller('auth')\nexport class AuthController {\n  @Throttle(5, 60)  // 5 requests per 60 seconds\n  @Post('login')\n  login() {}\n}\n```\n\n## Rate Limit Headers\n```\nX-RateLimit-Limit: 100\nX-RateLimit-Remaining: 95\nX-RateLimit-Reset: 1640000000\n```\n\n## Strategies\n- Per-user limits (authenticated)\n- Per-IP limits (anonymous)\n- Per-endpoint limits\n- Sliding window vs fixed window",
+            "createdAt": "2026-02-03T18:57:41.358Z",
+            "updatedAt": "2026-02-03T18:57:41.358Z"
+        },
+        {
+            "id": "1370d49d-9f53-46a1-a0fb-f6668255ea4e",
+            "title": "Error Boundary Designer",
+            "description": "Builds resilient React applications with error boundaries.",
+            "content": "# Error Boundary Designer\n\nI help you build resilient React applications.\n\n## Class-Based Error Boundary\n```tsx\nclass ErrorBoundary extends Component<Props, State> {\n  state = { hasError: false, error: null };\n\n  static getDerivedStateFromError(error: Error) {\n    return { hasError: true, error };\n  }\n\n  componentDidCatch(error: Error, errorInfo: ErrorInfo) {\n    logToErrorService(error, errorInfo);\n  }\n\n  render() {\n    if (this.state.hasError) {\n      return <ErrorFallback error={this.state.error} />;\n    }\n    return this.props.children;\n  }\n}\n```\n\n## Usage Patterns\n```tsx\n// Wrap at route level\n<ErrorBoundary fallback={<PageError />}>\n  <Route path=\"/dashboard\" component={Dashboard} />\n</ErrorBoundary>\n\n// Wrap individual features\n<ErrorBoundary fallback={<WidgetError />}>\n  <ExpensiveWidget />\n</ErrorBoundary>\n```\n\n## Best Practices\n- Place boundaries at logical points\n- Provide helpful fallback UI\n- Log errors to monitoring service\n- Allow users to retry",
+            "createdAt": "2026-02-03T18:57:41.354Z",
+            "updatedAt": "2026-02-03T18:57:41.354Z"
+        },
+        {
+            "id": "80bf9e60-0257-49fd-9ea9-2e1695f49c46",
+            "title": "TypeScript Advanced Patterns",
+            "description": "Leverages advanced TypeScript patterns for type-safe code.",
+            "content": "# TypeScript Advanced Patterns\n\nI help you leverage TypeScript's powerful type system.\n\n## Generic Constraints\n```typescript\nfunction getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {\n  return obj[key];\n}\n```\n\n## Mapped Types\n```typescript\ntype Readonly<T> = {\n  readonly [P in keyof T]: T[P];\n};\n\ntype Partial<T> = {\n  [P in keyof T]?: T[P];\n};\n```\n\n## Conditional Types\n```typescript\ntype NonNullable<T> = T extends null | undefined ? never : T;\n\ntype ReturnType<T> = T extends (...args: any[]) => infer R ? R : never;\n```\n\n## Discriminated Unions\n```typescript\ntype Result<T, E> =\n  | { success: true; data: T }\n  | { success: false; error: E };\n\nfunction handle(result: Result<User, Error>) {\n  if (result.success) {\n    // TypeScript knows result.data exists\n  }\n}\n```\n\n## Template Literal Types\n```typescript\ntype EventName = `on${Capitalize<string>}`;\n```",
+            "createdAt": "2026-02-03T18:57:41.350Z",
+            "updatedAt": "2026-02-03T18:57:41.350Z"
+        },
+        {
+            "id": "bfc2c9a2-924d-4bb1-9b9d-ef8a4ce9b9af",
+            "title": "Health Check Implementation",
+            "description": "Implements health checks for reliable deployments and monitoring.",
+            "content": "# Health Check Implementation\n\nI implement robust health checks for reliable deployments.\n\n## NestJS Health Checks\n```typescript\n@Controller('health')\nexport class HealthController {\n  constructor(\n    private health: HealthCheckService,\n    private db: TypeOrmHealthIndicator,\n    private memory: MemoryHealthIndicator,\n  ) {}\n\n  @Get()\n  @HealthCheck()\n  check() {\n    return this.health.check([\n      () => this.db.pingCheck('database'),\n      () => this.memory.checkHeap('memory_heap', 150 * 1024 * 1024),\n    ]);\n  }\n\n  @Get('liveness')\n  liveness() {\n    return { status: 'ok' };\n  }\n\n  @Get('readiness')\n  @HealthCheck()\n  readiness() {\n    return this.health.check([\n      () => this.db.pingCheck('database'),\n    ]);\n  }\n}\n```\n\n## Health Check Types\n- **Liveness**: Is the app running?\n- **Readiness**: Can the app serve traffic?\n\n## Kubernetes Configuration\n```yaml\nlivenessProbe:\n  httpGet:\n    path: /health/liveness\n    port: 3000\n  initialDelaySeconds: 10\nreadinessProbe:\n  httpGet:\n    path: /health/readiness\n    port: 3000\n```",
+            "createdAt": "2026-02-03T18:57:41.346Z",
+            "updatedAt": "2026-02-03T18:57:41.346Z"
+        },
+        {
+            "id": "70266211-2f12-407d-96d2-0ff9c970ffd8",
+            "title": "Logging & Monitoring Setup",
+            "description": "Configures structured logging and application monitoring.",
+            "content": "# Logging & Monitoring Setup\n\nI configure effective logging and monitoring.\n\n## Structured Logging\n```typescript\nimport { Logger } from 'winston';\n\nconst logger = winston.createLogger({\n  format: winston.format.combine(\n    winston.format.timestamp(),\n    winston.format.json()\n  ),\n  transports: [\n    new winston.transports.Console(),\n  ],\n});\n\n// Usage\nlogger.info('User created', {\n  userId: user.id,\n  email: user.email,\n  action: 'user.created'\n});\n```\n\n## Log Levels\n| Level | Use Case |\n|-------|----------|\n| error | Errors requiring immediate attention |\n| warn | Potential issues |\n| info | Important business events |\n| debug | Detailed debugging info |\n\n## Request Correlation\n```typescript\n// Add request ID to all logs\napp.use((req, res, next) => {\n  req.id = uuid();\n  logger.defaultMeta = { requestId: req.id };\n  next();\n});\n```\n\n## Key Metrics to Track\n- Request latency (p50, p95, p99)\n- Error rates\n- Database query times\n- Memory and CPU usage",
+            "createdAt": "2026-02-03T18:57:41.341Z",
+            "updatedAt": "2026-02-03T18:57:41.341Z"
+        },
+        {
+            "id": "fc157b70-18e3-4f2f-85ab-63ef114dbcc8",
+            "title": "Environment Configuration Manager",
+            "description": "Manages environment configuration and secrets safely.",
+            "content": "# Environment Configuration Manager\n\nI help you manage environment-specific configuration safely.\n\n## Configuration Hierarchy\n```\n1. Default values in code\n2. Environment-specific config files\n3. Environment variables (highest priority)\n```\n\n## NestJS ConfigModule\n```typescript\n@Module({\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true,\n      validationSchema: Joi.object({\n        NODE_ENV: Joi.string().valid('development', 'production'),\n        PORT: Joi.number().default(3000),\n        DATABASE_URL: Joi.string().required(),\n      }),\n    }),\n  ],\n})\nexport class AppModule {}\n```\n\n## Environment Files\n```\n.env              # Local development (gitignored)\n.env.example      # Template (committed)\n.env.test         # Test environment\n```\n\n## Security Rules\n1. Never commit secrets to git\n2. Use secret managers in production\n3. Rotate secrets regularly\n4. Audit access to secrets",
+            "createdAt": "2026-02-03T18:57:41.254Z",
+            "updatedAt": "2026-02-03T18:57:41.254Z"
+        },
+        {
+            "id": "cae917f8-cc15-4e98-9414-a6ea94cc4fb8",
+            "title": "CI/CD Pipeline Designer",
+            "description": "Designs CI/CD pipelines with GitHub Actions for automated testing and deployment.",
+            "content": "# CI/CD Pipeline Designer\n\nI design fast, reliable deployment pipelines.\n\n## GitHub Actions Workflow\n```yaml\nname: CI/CD\non:\n  push:\n    branches: [main]\n  pull_request:\n    branches: [main]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 20\n          cache: 'npm'\n      - run: npm ci\n      - run: npm test\n\n  deploy:\n    needs: test\n    if: github.ref == 'refs/heads/main'\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - name: Deploy to production\n        run: ./deploy.sh\n```\n\n## Pipeline Stages\n1. **Lint** - Code style checks\n2. **Test** - Unit and integration tests\n3. **Build** - Create artifacts\n4. **Deploy** - Push to environment\n\n## Best Practices\n- Cache dependencies between runs\n- Run jobs in parallel when possible\n- Use branch protection rules\n- Require PR reviews before merge",
+            "createdAt": "2026-02-03T18:57:41.249Z",
+            "updatedAt": "2026-02-03T18:57:41.249Z"
+        },
+        {
+            "id": "5126aa98-37b1-4a3f-bb60-9cd928054b36",
+            "title": "Docker Best Practices Guide",
+            "description": "Creates efficient, secure Docker images with multi-stage builds.",
+            "content": "# Docker Best Practices Guide\n\nI help you create efficient, secure Docker images.\n\n## Multi-Stage Build\n```dockerfile\n# Build stage\nFROM node:20-alpine AS builder\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci\nCOPY . .\nRUN npm run build\n\n# Production stage\nFROM node:20-alpine\nWORKDIR /app\nCOPY --from=builder /app/dist ./dist\nCOPY --from=builder /app/node_modules ./node_modules\nUSER node\nCMD [\"node\", \"dist/main.js\"]\n```\n\n## Security Best Practices\n\n### Run as Non-Root\n```dockerfile\nRUN addgroup -g 1001 -S nodejs\nRUN adduser -S nodejs -u 1001\nUSER nodejs\n```\n\n### Use Specific Tags\n```dockerfile\n# ❌ Bad\nFROM node:latest\n\n# ✅ Good\nFROM node:20.10.0-alpine3.19\n```\n\n## Layer Optimization\n\n### Order by Change Frequency\n```dockerfile\nCOPY package*.json ./\nRUN npm ci\nCOPY . .  # Changes most often, do last\n```\n\n### Use .dockerignore\n```\nnode_modules\n.git\n*.md\n.env*\n```",
+            "createdAt": "2026-02-03T18:57:41.243Z",
+            "updatedAt": "2026-02-03T18:57:41.243Z"
+        },
+        {
+            "id": "d172b3d1-f8cc-4393-b0e3-752d96d14756",
+            "title": "Database Connection Pool Manager",
+            "description": "Optimizes database connection pooling and resource management.",
+            "content": "# Database Connection Pool Manager\n\nI optimize database connection management.\n\n## Connection Pooling Basics\n\n### Why Pool?\n- Creating connections is expensive\n- Limits protect database from overload\n- Reuse improves performance\n\n### Configuration\n```typescript\nconst pool = new Pool({\n  max: 20,              // Maximum connections\n  min: 5,               // Minimum connections\n  idleTimeoutMillis: 30000,\n  connectionTimeoutMillis: 5000,\n});\n```\n\n## Sizing Guidelines\n\n| Connections Formula |\n|---------------------|\n| connections = (cores * 2) + spindle_disks |\n| For SSD: connections = cores * 2 |\n\n### Per-Application Limits\n- API servers: 10-20 per instance\n- Background workers: 5-10 per worker\n- Total < PostgreSQL max_connections\n\n## Best Practices\n\n### Release Connections\n```typescript\n// Always release back to pool\nconst client = await pool.connect();\ntry {\n  await client.query('SELECT...');\n} finally {\n  client.release();\n}\n```\n\n### Monitor Pool Health\n- Check waiting connections\n- Monitor connection age\n- Alert on pool exhaustion",
+            "createdAt": "2026-02-03T18:57:41.169Z",
+            "updatedAt": "2026-02-03T18:57:41.169Z"
+        },
+        {
+            "id": "3b0c16f0-bb02-4076-9bc1-f862a9d726a0",
+            "title": "Database Migration Expert",
+            "description": "Manages database migrations safely with proper practices.",
+            "content": "# Database Migration Expert\n\nI help you manage database migrations safely.\n\n## Migration Workflow\n\n### Generate Migration\n```bash\nnpm run db:generate\n```\n\n### Review Generated SQL\nAlways review before running:\n- Check for destructive changes\n- Verify index creation\n- Ensure rollback is possible\n\n### Run Migration\n```bash\nnpm run db:migrate\n```\n\n## Safe Migration Practices\n\n### Adding Columns\n```sql\n-- Safe: nullable or with default\nALTER TABLE users ADD COLUMN bio TEXT;\nALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active';\n```\n\n### Renaming Columns (Multi-step)\n1. Add new column\n2. Backfill data\n3. Update application code\n4. Drop old column (later migration)\n\n### Adding NOT NULL\n```sql\n-- 1. Add column nullable\nALTER TABLE users ADD COLUMN role TEXT;\n-- 2. Backfill data\nUPDATE users SET role = 'user' WHERE role IS NULL;\n-- 3. Add constraint\nALTER TABLE users ALTER COLUMN role SET NOT NULL;\n```\n\n## Rollback Strategy\nAlways test rollbacks in staging before production.",
+            "createdAt": "2026-02-03T18:57:41.165Z",
+            "updatedAt": "2026-02-03T18:57:41.165Z"
+        },
+        {
+            "id": "f59f1ec2-22df-4ef0-88be-65255c125e02",
+            "title": "ORM Best Practices Guide",
+            "description": "Guides ORM usage with Drizzle patterns and N+1 prevention.",
+            "content": "# ORM Best Practices Guide\n\nI help you use ORMs effectively without pitfalls.\n\n## Drizzle ORM Patterns\n\n### Define Schema\n```typescript\nexport const users = pgTable('users', {\n  id: uuid('id').primaryKey().defaultRandom(),\n  email: text('email').notNull().unique(),\n  name: text('name'),\n  createdAt: timestamp('created_at').defaultNow(),\n});\n```\n\n### Relations\n```typescript\nexport const usersRelations = relations(users, ({ many }) => ({\n  posts: many(posts),\n}));\n```\n\n### Queries with Joins\n```typescript\nconst usersWithPosts = await db.query.users.findMany({\n  with: { posts: true },\n  where: eq(users.status, 'active'),\n});\n```\n\n## Avoiding N+1\n```typescript\n// ❌ N+1 Problem\nconst users = await db.query.users.findMany();\nfor (const user of users) {\n  const posts = await db.query.posts.findMany({\n    where: eq(posts.userId, user.id)\n  });\n}\n\n// ✅ Eager loading\nconst users = await db.query.users.findMany({\n  with: { posts: true }\n});\n```\n\n## Transaction Safety\n```typescript\nawait db.transaction(async (tx) => {\n  await tx.insert(orders).values(order);\n  await tx.insert(orderItems).values(items);\n});\n```",
+            "createdAt": "2026-02-03T18:57:41.161Z",
+            "updatedAt": "2026-02-03T18:57:41.161Z"
+        },
+        {
+            "id": "5e575a59-703c-4748-884d-8a0039ea9311",
+            "title": "SQL Query Optimizer",
+            "description": "Optimizes SQL queries using EXPLAIN, indexes, and query rewriting.",
+            "content": "# SQL Query Optimizer\n\nI optimize SQL queries for maximum performance.\n\n## Analyzing Queries\n```sql\nEXPLAIN ANALYZE SELECT * FROM users WHERE email = 'test@example.com';\n```\n\n## Common Optimizations\n\n### Use Indexes\n```sql\n-- Before: Seq Scan (slow)\nSELECT * FROM orders WHERE user_id = 123;\n\n-- After: Add index\nCREATE INDEX idx_orders_user_id ON orders(user_id);\n-- Now: Index Scan (fast)\n```\n\n### Avoid SELECT *\n```sql\n-- ❌ Bad\nSELECT * FROM users;\n\n-- ✅ Good\nSELECT id, email, name FROM users;\n```\n\n### N+1 Query Problem\n```sql\n-- ❌ Bad: N+1 queries\nfor each user:\n  SELECT * FROM orders WHERE user_id = ?\n\n-- ✅ Good: Single query\nSELECT * FROM orders WHERE user_id IN (1, 2, 3...);\n```\n\n### Pagination\n```sql\n-- Use cursor-based for large datasets\nSELECT * FROM posts\nWHERE created_at < $cursor\nORDER BY created_at DESC\nLIMIT 20;\n```",
+            "createdAt": "2026-02-03T18:57:41.157Z",
+            "updatedAt": "2026-02-03T18:57:41.157Z"
+        },
+        {
+            "id": "964b5ee2-1ebd-4889-acdf-8edd4430243a",
+            "title": "Database Schema Designer",
+            "description": "Designs efficient database schemas with proper indexes and relationships.",
+            "content": "# Database Schema Designer\n\nI design efficient, scalable database schemas.\n\n## Normalization vs Denormalization\n\n### When to Normalize (3NF)\n- Transactional data (orders, payments)\n- Frequently updated data\n- Data integrity is critical\n\n### When to Denormalize\n- Read-heavy workloads\n- Reporting/analytics\n- Known query patterns\n\n## PostgreSQL Best Practices\n\n### Primary Keys\n```sql\n-- UUID for distributed systems\nid UUID PRIMARY KEY DEFAULT gen_random_uuid()\n\n-- Serial for simple apps\nid SERIAL PRIMARY KEY\n```\n\n### Indexes\n```sql\n-- Composite index for common queries\nCREATE INDEX idx_users_status_created\n  ON users(status, created_at DESC);\n\n-- Partial index for filtered queries\nCREATE INDEX idx_active_users\n  ON users(email) WHERE status = 'active';\n```\n\n### Foreign Keys\n```sql\nuser_id UUID REFERENCES users(id) ON DELETE CASCADE\n```\n\n## Common Patterns\n- Soft deletes with `deleted_at` timestamp\n- Audit columns: `created_at`, `updated_at`\n- JSONB for flexible metadata",
+            "createdAt": "2026-02-03T18:57:41.153Z",
+            "updatedAt": "2026-02-03T18:57:41.153Z"
+        },
+        {
+            "id": "7fd448a0-a84c-4af0-ad2a-94ac7c521b6f",
+            "title": "SOLID Principles Advisor",
+            "description": "Applies SOLID design principles for flexible, maintainable code.",
+            "content": "# SOLID Principles Advisor\n\nI help you apply SOLID principles for maintainable code.\n\n## S - Single Responsibility\n```typescript\n// ❌ Multiple responsibilities\nclass UserService {\n  createUser() {}\n  sendEmail() {}\n  generateReport() {}\n}\n\n// ✅ Single responsibility\nclass UserService { createUser() {} }\nclass EmailService { sendEmail() {} }\n```\n\n## O - Open/Closed\n```typescript\n// ✅ Extend without modifying\ninterface DiscountStrategy {\n  calculate(amount: number): number;\n}\nclass PercentageDiscount implements DiscountStrategy {}\nclass FixedDiscount implements DiscountStrategy {}\n```\n\n## L - Liskov Substitution\nSubtypes must be substitutable for base types.\n\n## I - Interface Segregation\n```typescript\n// ✅ Segregated interfaces\ninterface Workable { work(): void; }\ninterface Eatable { eat(): void; }\n```\n\n## D - Dependency Inversion\n```typescript\n// ✅ Depend on abstractions\nclass UserService {\n  constructor(private database: Database) {}\n}\n```",
+            "createdAt": "2026-02-03T18:57:41.149Z",
+            "updatedAt": "2026-02-03T18:57:41.149Z"
+        },
+        {
+            "id": "2b922d4e-ab66-416a-ac72-4c799cf71f87",
+            "title": "Clean Code Principles Guide",
+            "description": "Applies Clean Code principles including meaningful naming and small functions.",
+            "content": "# Clean Code Principles Guide\n\nI help you write code that is easy to read and maintain.\n\n## Meaningful Names\n```typescript\n// ❌ Bad\nconst d = new Date();\nconst u = users.filter(x => x.a);\n\n// ✅ Good\nconst currentDate = new Date();\nconst activeUsers = users.filter(user => user.isActive);\n```\n\n## Naming Conventions\n| Type | Convention | Example |\n|------|------------|---------|\n| Boolean | is/has prefix | `isActive` |\n| Function | Verb + noun | `calculateTotal` |\n| Class | Noun | `UserRepository` |\n\n## Small Functions\n```typescript\n// ✅ Each function does one thing\nfunction processUser(user: User) {\n  validateUser(user);\n  saveUser(user);\n  sendWelcomeEmail(user);\n}\n```\n\n## Comments: Why, Not What\n```typescript\n// ❌ States the obvious\n// Loop through users\n\n// ✅ Explains why\n// Process in batches to avoid memory issues\n```\n\n## Boy Scout Rule\n> Leave the code cleaner than you found it.",
+            "createdAt": "2026-02-03T18:57:41.145Z",
+            "updatedAt": "2026-02-03T18:57:41.145Z"
+        },
+        {
+            "id": "359578be-d40f-4113-a3d7-c14ad29bd5d9",
+            "title": "Code Smell Detective",
+            "description": "Identifies code smells and provides refactoring strategies.",
+            "content": "# Code Smell Detective\n\nI identify code smells and suggest refactoring strategies.\n\n## Common Smells\n\n### Long Functions (>20 lines)\n```typescript\n// ❌ Does too much\nasync function processOrder(order) { /* 50 lines */ }\n\n// ✅ Single responsibility\nasync function processOrder(order) {\n  validateOrder(order);\n  const total = calculateTotal(order);\n  await processPayment(order, total);\n}\n```\n\n### Primitive Obsession\n```typescript\n// ❌ Bad\nfunction createUser(email: string, phone: string) {}\n\n// ✅ Good\nfunction createUser(email: Email, phone: Phone) {}\n```\n\n### Feature Envy\n```typescript\n// ❌ Uses another class's data excessively\nfunction getOrderTotal(order: Order) {\n  return order.items.reduce(...);\n}\n\n// ✅ Move to Order class\nclass Order {\n  getTotal(): number { return this.items.reduce(...); }\n}\n```\n\n## Detection Tools\n- SonarQube / SonarCloud\n- ESLint complexity rules\n- Code Climate",
+            "createdAt": "2026-02-03T18:57:41.141Z",
+            "updatedAt": "2026-02-03T18:57:41.141Z"
+        },
+        {
+            "id": "07ac0012-a27c-4027-96e3-a006ae0b39da",
+            "title": "Code Formatter Setup Guide",
+            "description": "Configures Prettier and auto-formatting for consistent code style.",
+            "content": "# Code Formatter Setup Guide\n\nI set up automatic code formatting for consistency.\n\n## Prettier Configuration\n```javascript\n// prettier.config.js\nexport default {\n  printWidth: 100,\n  tabWidth: 2,\n  singleQuote: true,\n  trailingComma: 'es5',\n  semi: true,\n  arrowParens: 'always',\n};\n```\n\n## EditorConfig\n```ini\n# .editorconfig\nroot = true\n\n[*]\ncharset = utf-8\nend_of_line = lf\nindent_style = space\nindent_size = 2\ninsert_final_newline = true\n```\n\n## ESLint + Prettier Integration\n```bash\nnpm install -D eslint-config-prettier\n```\n\n## VS Code Settings\n```json\n{\n  \"editor.formatOnSave\": true,\n  \"editor.defaultFormatter\": \"esbenp.prettier-vscode\"\n}\n```\n\n## Pre-commit Hooks\n```bash\nnpx husky init\nnpm install -D lint-staged\n```",
+            "createdAt": "2026-02-03T18:57:41.078Z",
+            "updatedAt": "2026-02-03T18:57:41.078Z"
+        },
+        {
+            "id": "f9708124-3347-4914-9ace-f0a6ef5bd065",
+            "title": "ESLint Configuration Expert",
+            "description": "Configures ESLint with TypeScript, React, and custom rules.",
+            "content": "# ESLint Configuration Expert\n\nI configure ESLint for consistent code style.\n\n## Modern ESLint Setup (Flat Config)\n```javascript\n// eslint.config.js\nimport eslint from '@eslint/js';\nimport tseslint from 'typescript-eslint';\n\nexport default tseslint.config(\n  eslint.configs.recommended,\n  ...tseslint.configs.recommended,\n  {\n    rules: {\n      '@typescript-eslint/no-unused-vars': ['error', {\n        argsIgnorePattern: '^_',\n      }],\n      '@typescript-eslint/no-explicit-any': 'warn',\n      'no-console': ['warn', { allow: ['warn', 'error'] }],\n      'prefer-const': 'error',\n    },\n  }\n);\n```\n\n## IDE Integration\n```json\n{\n  \"editor.codeActionsOnSave\": {\n    \"source.fixAll.eslint\": true\n  }\n}\n```\n\n## Pre-commit Hook\n```json\n{\n  \"lint-staged\": {\n    \"*.{ts,tsx}\": [\"eslint --fix\", \"prettier --write\"]\n  }\n}\n```",
+            "createdAt": "2026-02-03T18:57:41.074Z",
+            "updatedAt": "2026-02-03T18:57:41.074Z"
+        },
+        {
+            "id": "3efe6527-e5ef-4969-87d8-874a566a2fa2",
+            "title": "Test Coverage Analyst",
+            "description": "Analyzes test coverage metrics and identifies critical gaps.",
+            "content": "# Test Coverage Analyst\n\nI help you understand and improve test coverage strategically.\n\n## Coverage Metrics\n\n| Metric | Target | Description |\n|--------|--------|-------------|\n| Line | 80%+ | % of code lines executed |\n| Branch | 75%+ | % of decision paths tested |\n| Function | 90%+ | % of functions called |\n\n## Generating Reports\n```bash\nnpm test -- --coverage\n```\n\n## Prioritizing Coverage\n\n### Critical (90%+)\n- Authentication & authorization\n- Payment processing\n- Data validation\n\n### Important (80%+)\n- Business logic\n- API endpoints\n- State management\n\n### Lower Priority (60%+)\n- UI components\n- Configuration\n- Third-party integrations\n\n## Coverage Anti-Patterns\n```typescript\n// ❌ Meaningless test\nit('should exist', () => {\n  expect(service).toBeDefined();\n});\n\n// ✅ Tests behavior\nexpect(result.status).toBe('success');\n```",
+            "createdAt": "2026-02-03T18:57:41.070Z",
+            "updatedAt": "2026-02-03T18:57:41.070Z"
+        },
+        {
+            "id": "8c4349ae-18ba-4ed9-abad-2772fdd8c522",
+            "title": "Test-Driven Development Coach",
+            "description": "Guides through the TDD red-green-refactor cycle with practical examples.",
+            "content": "# Test-Driven Development Coach\n\nI guide you through the TDD red-green-refactor cycle.\n\n## The TDD Cycle\n```\n1. RED    → Write a failing test\n2. GREEN  → Write minimal code to pass\n3. REFACTOR → Improve code quality\n→ Repeat\n```\n\n## Example: Building a Shopping Cart\n\n### Step 1: RED\n```typescript\nit('should start empty', () => {\n  const cart = new ShoppingCart();\n  expect(cart.items).toEqual([]);\n  expect(cart.total).toBe(0);\n});\n```\n\n### Step 2: GREEN\n```typescript\nclass ShoppingCart {\n  items: CartItem[] = [];\n  get total(): number { return 0; }\n}\n```\n\n### Step 3: Next Test (RED)\n```typescript\nit('should add item to cart', () => {\n  const cart = new ShoppingCart();\n  cart.addItem({ id: '1', price: 29.99, quantity: 1 });\n  expect(cart.total).toBe(29.99);\n});\n```\n\n## When to Use TDD\n- New features with clear requirements\n- Bug fixes (write test that reproduces bug first)\n- Refactoring legacy code",
+            "createdAt": "2026-02-03T18:57:41.065Z",
+            "updatedAt": "2026-02-03T18:57:41.065Z"
+        },
+        {
+            "id": "7383f152-2346-431c-8b81-9c026a8cebe1",
+            "title": "E2E Test Engineer",
+            "description": "Creates end-to-end tests using Playwright that simulate user workflows.",
+            "content": "# E2E Test Engineer\n\nI create reliable end-to-end tests with Playwright.\n\n## Test Structure\n```typescript\ntest.describe('User Authentication', () => {\n  test('should complete signup flow', async ({ page }) => {\n    await page.goto('/signup');\n\n    await page.getByLabel('Email').fill('newuser@example.com');\n    await page.getByLabel('Password').fill('SecurePass123');\n    await page.getByRole('button', { name: 'Create Account' }).click();\n\n    await expect(page).toHaveURL('/dashboard');\n    await expect(page.getByText('Welcome!')).toBeVisible();\n  });\n});\n```\n\n## Page Object Pattern\n```typescript\nexport class LoginPage {\n  constructor(private page: Page) {}\n\n  async login(email: string, password: string) {\n    await this.page.getByLabel('Email').fill(email);\n    await this.page.getByLabel('Password').fill(password);\n    await this.page.getByRole('button', { name: 'Sign in' }).click();\n  }\n}\n```\n\n## Best Practices\n- Use role-based selectors (`getByRole`)\n- Wait for network idle when needed\n- Test on multiple browsers",
+            "createdAt": "2026-02-03T18:57:41.061Z",
+            "updatedAt": "2026-02-03T18:57:41.061Z"
+        },
+        {
+            "id": "4071a8a1-f5d5-4120-958c-70af09807f52",
+            "title": "Integration Test Strategist",
+            "description": "Designs integration tests for API endpoints and database operations.",
+            "content": "# Integration Test Strategist\n\nI design integration tests that verify component interactions.\n\n## API Integration Tests (NestJS)\n```typescript\ndescribe('POST /users', () => {\n  beforeEach(async () => {\n    await prisma.user.deleteMany();\n  });\n\n  it('should create a user', async () => {\n    const response = await request(app.getHttpServer())\n      .post('/users')\n      .send({ email: 'test@example.com', password: 'SecurePass123' })\n      .expect(201);\n\n    expect(response.body.email).toBe('test@example.com');\n\n    // Verify database state\n    const user = await prisma.user.findUnique({\n      where: { email: 'test@example.com' },\n    });\n    expect(user).toBeTruthy();\n  });\n\n  it('should return 422 for invalid email', async () => {\n    await request(app.getHttpServer())\n      .post('/users')\n      .send({ email: 'invalid', password: 'SecurePass123' })\n      .expect(422);\n  });\n});\n```\n\n## Best Practices\n- Test real database, not mocks\n- Clean state between tests\n- Test authentication flows",
+            "createdAt": "2026-02-03T18:57:41.057Z",
+            "updatedAt": "2026-02-03T18:57:41.057Z"
+        },
+        {
+            "id": "980206ea-63cc-437f-b942-dff0b7af93da",
+            "title": "Unit Test Architect",
+            "description": "Writes comprehensive unit tests with proper mocking and assertions.",
+            "content": "# Unit Test Architect\n\nI write effective unit tests with proper mocking.\n\n## Test Structure (AAA Pattern)\n```typescript\ndescribe('UserService', () => {\n  describe('createUser', () => {\n    it('should create a user with valid data', async () => {\n      // Arrange\n      const dto = { email: 'test@example.com' };\n      mockRepository.save.mockResolvedValue({ id: '1', ...dto });\n\n      // Act\n      const result = await service.createUser(dto);\n\n      // Assert\n      expect(result.email).toBe(dto.email);\n      expect(mockRepository.save).toHaveBeenCalled();\n    });\n\n    it('should throw on duplicate email', async () => {\n      mockRepository.findOne.mockResolvedValue({ id: '1' });\n\n      await expect(service.createUser({ email: 'existing@example.com' }))\n        .rejects.toThrow(ConflictException);\n    });\n  });\n});\n```\n\n## Best Practices\n- Test behavior, not implementation\n- One assertion concept per test\n- Use descriptive test names\n- Test edge cases and error paths\n- Keep tests fast (< 100ms each)",
+            "createdAt": "2026-02-03T18:57:41.053Z",
+            "updatedAt": "2026-02-03T18:57:41.053Z"
+        },
+        {
+            "id": "2d5ae022-4c28-4f8c-b4a7-665fe7d1ef5a",
+            "title": "API Documentation Generator",
+            "description": "Creates comprehensive API documentation using OpenAPI/Swagger.",
+            "content": "# API Documentation Generator\n\nI create developer-friendly API documentation.\n\n## OpenAPI with NestJS\n\n### Setup\n```typescript\nconst config = new DocumentBuilder()\n  .setTitle('BridgeMind API')\n  .setVersion('1.0')\n  .addBearerAuth()\n  .build();\n\nconst document = SwaggerModule.createDocument(app, config);\nSwaggerModule.setup('api/docs', app, document);\n```\n\n### Controller Documentation\n```typescript\n@ApiTags('users')\n@ApiBearerAuth()\n@Controller('users')\nexport class UsersController {\n  @Get()\n  @ApiOperation({ summary: 'List all users' })\n  @ApiQuery({ name: 'page', required: false })\n  @ApiResponse({ status: 200, type: PaginatedUsersResponse })\n  async findAll(@Query() query: ListUsersDto) {}\n}\n```\n\n### DTO Documentation\n```typescript\nexport class CreateUserDto {\n  @ApiProperty({\n    description: 'User email address',\n    example: 'john@example.com',\n  })\n  @IsEmail()\n  email: string;\n}\n```\n\nInclude realistic examples and document all error responses.",
+            "createdAt": "2026-02-03T18:57:41.049Z",
+            "updatedAt": "2026-02-03T18:57:41.049Z"
+        },
+        {
+            "id": "18c7e199-e3da-4769-8e31-61755fbeb5bc",
+            "title": "API Input Validation Specialist",
+            "description": "Implements comprehensive request validation using DTOs and decorators.",
+            "content": "# API Input Validation Specialist\n\nI implement bulletproof input validation.\n\n## NestJS Validation Setup\n```typescript\napp.useGlobalPipes(new ValidationPipe({\n  whitelist: true,\n  forbidNonWhitelisted: true,\n  transform: true,\n}));\n```\n\n## DTO Examples\n```typescript\nexport class CreateUserDto {\n  @IsEmail()\n  @Transform(({ value }) => value.toLowerCase().trim())\n  email: string;\n\n  @IsString()\n  @MinLength(8)\n  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/, {\n    message: 'Password must contain uppercase, lowercase, and number',\n  })\n  password: string;\n\n  @IsOptional()\n  @IsString()\n  @MaxLength(100)\n  name?: string;\n}\n```\n\n## Custom Validators\n```typescript\n@ValidatorConstraint({ async: true })\nexport class IsEmailUniqueConstraint {\n  async validate(email: string) {\n    const user = await this.userService.findByEmail(email);\n    return !user;\n  }\n}\n```",
+            "createdAt": "2026-02-03T18:57:41.045Z",
+            "updatedAt": "2026-02-03T18:57:41.045Z"
+        },
+        {
+            "id": "6987a4f4-0e81-414c-ab79-02daa4721d64",
+            "title": "API Error Handling Expert",
+            "description": "Implements consistent error handling with proper status codes and messages.",
+            "content": "# API Error Handling Expert\n\nI implement robust, consistent error handling.\n\n## Error Response Structure\n```typescript\ninterface ApiError {\n  status: number;\n  code: string;           // Machine-readable\n  message: string;        // Human-readable\n  details?: ErrorDetail[];\n  requestId: string;      // For log correlation\n}\n```\n\n## Example Response\n```json\n{\n  \"status\": 422,\n  \"code\": \"VALIDATION_ERROR\",\n  \"message\": \"Request validation failed\",\n  \"details\": [\n    { \"field\": \"email\", \"message\": \"Must be valid email\" }\n  ],\n  \"requestId\": \"req_abc123\"\n}\n```\n\n## NestJS Implementation\n```typescript\n@Catch()\nexport class GlobalExceptionFilter implements ExceptionFilter {\n  catch(exception: unknown, host: ArgumentsHost) {\n    const ctx = host.switchToHttp();\n    // Log full error internally\n    // Return sanitized error to client\n  }\n}\n```\n\n## Security\n- Never expose stack traces in production\n- Sanitize database errors\n- Use generic messages for auth errors",
+            "createdAt": "2026-02-03T18:57:40.996Z",
+            "updatedAt": "2026-02-03T18:57:40.996Z"
+        },
+        {
+            "id": "7eabfeb8-175e-4466-aeeb-6822ef04328b",
+            "title": "GraphQL Schema Architect",
+            "description": "Designs efficient GraphQL schemas with proper types and resolver patterns.",
+            "content": "# GraphQL Schema Architect\n\nI design type-safe, efficient GraphQL schemas.\n\n## Schema Design\n\n### Types\n```graphql\ntype User {\n  id: ID!\n  email: String!\n  posts: [Post!]!\n  createdAt: DateTime!\n}\n\nenum PostStatus {\n  DRAFT\n  PUBLISHED\n  ARCHIVED\n}\n```\n\n### Queries with Pagination\n```graphql\ntype Query {\n  user(id: ID!): User\n  users(first: Int, after: String): UserConnection!\n}\n\ntype UserConnection {\n  edges: [UserEdge!]!\n  pageInfo: PageInfo!\n  totalCount: Int!\n}\n```\n\n### Mutations\n```graphql\ntype Mutation {\n  createUser(input: CreateUserInput!): CreateUserPayload!\n}\n\ntype CreateUserPayload {\n  user: User\n  errors: [UserError!]\n}\n```\n\n## N+1 Prevention\nUse DataLoader for batching database queries.",
+            "createdAt": "2026-02-03T18:57:40.992Z",
+            "updatedAt": "2026-02-03T18:57:40.992Z"
+        },
+        {
+            "id": "e311a253-dec4-40b6-9226-c24301c573bd",
+            "title": "REST API Designer",
+            "description": "Designs RESTful APIs with proper naming, methods, and response structures.",
+            "content": "# REST API Designer\n\nI design intuitive, standards-compliant REST APIs.\n\n## Resource Naming\n```\nGET    /users              # List users\nPOST   /users              # Create user\nGET    /users/:id          # Get user\nPUT    /users/:id          # Replace user\nPATCH  /users/:id          # Update user\nDELETE /users/:id          # Delete user\nGET    /users/:id/posts    # User's posts\n```\n\n## HTTP Methods\n| Method | Use Case | Idempotent |\n|--------|----------|------------|\n| GET | Read | Yes |\n| POST | Create | No |\n| PUT | Replace | Yes |\n| PATCH | Update | Yes |\n| DELETE | Remove | Yes |\n\n## Response Structure\n```json\n{\n  \"data\": { ... },\n  \"meta\": {\n    \"pagination\": { \"page\": 1, \"total\": 150 }\n  }\n}\n```\n\n## Query Parameters\n```\n?page=2&limit=20       # Pagination\n?status=active         # Filtering\n?sort=-createdAt       # Sorting\n?fields=id,name        # Field selection\n```",
+            "createdAt": "2026-02-03T18:57:40.988Z",
+            "updatedAt": "2026-02-03T18:57:40.988Z"
+        },
+        {
+            "id": "0be20021-b29c-475b-bf56-573cbe870d0a",
+            "title": "Frontend Performance Optimizer",
+            "description": "Identifies and fixes performance bottlenecks using profiling and optimization techniques.",
+            "content": "# Frontend Performance Optimizer\n\nI fix performance issues for fast user experiences.\n\n## Core Web Vitals Targets\n\n| Metric | Good | Description |\n|--------|------|-------------|\n| LCP | < 2.5s | Largest Contentful Paint |\n| INP | < 200ms | Interaction to Next Paint |\n| CLS | < 0.1 | Cumulative Layout Shift |\n\n## React Optimization\n\n### Memoization\n```tsx\nconst ExpensiveList = memo(({ items }) => (\n  <ul>{items.map(item => <li key={item.id}>{item.name}</li>)}</ul>\n));\n\nconst sortedItems = useMemo(\n  () => items.sort((a, b) => a.name.localeCompare(b.name)),\n  [items]\n);\n```\n\n### Code Splitting\n```tsx\nconst Dashboard = lazy(() => import('./pages/Dashboard'));\n\n<Suspense fallback={<Skeleton />}>\n  <Dashboard />\n</Suspense>\n```\n\n### Virtual Lists\nFor 1000+ items, use @tanstack/react-virtual\n\n### Image Optimization\n```tsx\n<Image src=\"/hero.jpg\" width={1200} height={600} priority />\n```",
+            "createdAt": "2026-02-03T18:57:40.984Z",
+            "updatedAt": "2026-02-03T18:57:40.984Z"
+        },
+        {
+            "id": "a7f7bff6-2460-4e33-8bbd-0e01902a3a22",
+            "title": "Web Accessibility Champion",
+            "description": "Ensures WCAG compliance with proper ARIA, keyboard navigation, and semantic HTML.",
+            "content": "# Web Accessibility Champion\n\nI build inclusive applications meeting WCAG 2.1 AA standards.\n\n## Core Principles (POUR)\n1. **Perceivable** - Information presentable\n2. **Operable** - UI navigable\n3. **Understandable** - Content readable\n4. **Robust** - Compatible with assistive tech\n\n## Essential Checklist\n\n### Semantic HTML\n```tsx\n// ✅ Good\n<nav aria-label=\"Main navigation\">\n  <ul><li><a href=\"/home\">Home</a></li></ul>\n</nav>\n\n// ❌ Bad\n<div class=\"nav\" onclick=\"navigate()\">\n  <span>Home</span>\n</div>\n```\n\n### Keyboard Navigation\n```tsx\n<div\n  role=\"button\"\n  tabIndex={0}\n  onClick={handleClick}\n  onKeyDown={(e) => e.key === 'Enter' && handleClick()}\n>\n  Custom button\n</div>\n```\n\n### ARIA Labels\n```tsx\n<button aria-label=\"Close dialog\">\n  <XIcon />\n</button>\n```\n\n### Color Contrast\n- Normal text: 4.5:1 ratio minimum\n- Large text (18px+): 3:1 ratio minimum",
+            "createdAt": "2026-02-03T18:57:40.980Z",
+            "updatedAt": "2026-02-03T18:57:40.980Z"
+        },
+        {
+            "id": "268315a3-edae-4907-a383-52d13c6a27fc",
+            "title": "CSS Architecture Designer",
+            "description": "Creates scalable CSS architectures using modern methodologies.",
+            "content": "# CSS Architecture Designer\n\nI build maintainable, scalable CSS architectures.\n\n## Methodology Comparison\n\n### Tailwind CSS\n```tsx\n<button className=\"px-4 py-2 bg-blue-500 hover:bg-blue-600\n                   text-white rounded-lg transition-colors\">\n  Click me\n</button>\n```\n\n### CSS Modules\n```tsx\nimport styles from './Button.module.css';\n<button className={styles.button}>Click me</button>\n```\n\n### styled-components\n```tsx\nconst Button = styled.button<{ $primary?: boolean }>`\n  padding: 0.5rem 1rem;\n  background: ${props => props.$primary ? 'blue' : 'gray'};\n`;\n```\n\n## Design Tokens\n```css\n:root {\n  --color-primary: #3b82f6;\n  --spacing-md: 1rem;\n  --radius-lg: 0.5rem;\n}\n```\n\n## Component Variants with CVA\n```tsx\nconst button = cva('rounded font-medium', {\n  variants: {\n    intent: {\n      primary: 'bg-blue-500 text-white',\n      secondary: 'bg-gray-200 text-gray-800',\n    },\n  },\n});\n```",
+            "createdAt": "2026-02-03T18:57:40.976Z",
+            "updatedAt": "2026-02-03T18:57:40.976Z"
+        },
+        {
+            "id": "526c1b1f-adc7-4494-aebc-0e242a8876a5",
+            "title": "React State Management Advisor",
+            "description": "Recommends optimal state management solutions for React applications.",
+            "content": "# React State Management Advisor\n\nI help you choose the optimal state management approach.\n\n## Decision Framework\n\n### Use Local State When:\n- State used by single component\n- Simple boolean/string/number values\n```tsx\nconst [isOpen, setIsOpen] = useState(false);\n```\n\n### Use Context When:\n- Avoiding prop drilling (3+ levels)\n- Theme, locale, auth state\n- Infrequently changing data\n\n### Use External Store When:\n- Complex state logic\n- State shared across many components\n- Need time-travel debugging\n\n## Popular Solutions\n\n| Solution | Best For | Complexity |\n|----------|----------|------------|\n| useState/useReducer | Local state | Low |\n| Context API | Auth, Theme | Low |\n| Zustand | Simple global state | Low |\n| Redux Toolkit | Complex apps | Medium |\n| TanStack Query | Server state | Medium |\n\n## Server vs Client State\n\n**Server State** (TanStack Query): User data, lists, API data\n**Client State** (Zustand/Redux): UI state, forms, cart",
+            "createdAt": "2026-02-03T18:57:40.971Z",
+            "updatedAt": "2026-02-03T18:57:40.971Z"
+        },
+        {
+            "id": "ce69174b-447c-427b-99da-1e6e3e222270",
+            "title": "React Component Architecture",
+            "description": "Designs scalable React component hierarchies with proper composition patterns.",
+            "content": "# React Component Architecture\n\nI help you design maintainable React component structures.\n\n## Component Categories\n\n### Presentational Components\n```tsx\ninterface ButtonProps {\n  variant: 'primary' | 'secondary';\n  children: React.ReactNode;\n  onClick?: () => void;\n}\n\nexport const Button = ({ variant, children, onClick }: ButtonProps) => (\n  <button className={cn('btn', `btn-${variant}`)} onClick={onClick}>\n    {children}\n  </button>\n);\n```\n\n### Container Components\n```tsx\nexport const UserListContainer = () => {\n  const { data, isLoading } = useUsers();\n  if (isLoading) return <Skeleton />;\n  return <UserList users={data} />;\n};\n```\n\n### Compound Components\n```tsx\n<Card>\n  <Card.Header>Title</Card.Header>\n  <Card.Body>Content</Card.Body>\n  <Card.Footer>Actions</Card.Footer>\n</Card>\n```\n\n## Best Practices\n- Use discriminated unions for variants\n- Prefer composition over configuration\n- Keep state close to where it's used\n- Spread `...rest` props for extensibility",
+            "createdAt": "2026-02-03T18:57:40.968Z",
+            "updatedAt": "2026-02-03T18:57:40.968Z"
+        },
+        {
+            "id": "513d66d3-04c1-4d3a-a4af-e303f8f483e5",
+            "title": "Git History Surgeon",
+            "description": "Safely rewrites Git history using rebase, squash, and amend operations.",
+            "content": "# Git History Surgeon\n\nI help you craft clean Git history through safe rewriting operations.\n\n## Interactive Rebase\n\n```bash\ngit rebase -i HEAD~N\n```\n\n### Rebase Commands\n| Command | Action |\n|---------|--------|\n| `pick` | Keep commit as-is |\n| `reword` | Edit commit message |\n| `edit` | Stop to amend commit |\n| `squash` | Meld into previous commit |\n| `fixup` | Squash, discard message |\n| `drop` | Remove commit |\n\n## Common Operations\n\n### Squash Last N Commits\n```bash\ngit reset --soft HEAD~N\ngit commit -m \"Combined commit message\"\n```\n\n### Amend Last Commit\n```bash\ngit commit --amend -m \"New message\"\n```\n\n### Split a Commit\n```bash\ngit rebase -i HEAD~N  # Mark as 'edit'\ngit reset HEAD^\ngit add -p            # Stage selectively\ngit commit -m \"First part\"\n```\n\n## Safety Rules\n1. Never rewrite published history\n2. Always backup first: `git branch backup`\n3. Use `--force-with-lease` instead of `--force`",
+            "createdAt": "2026-02-03T18:57:40.963Z",
+            "updatedAt": "2026-02-03T18:57:40.963Z"
+        },
+        {
+            "id": "4c980ab5-fc65-4f34-a67b-b7f076768988",
+            "title": "Merge Conflict Resolver",
+            "description": "Helps understand and resolve Git merge conflicts with clear strategies.",
+            "content": "# Merge Conflict Resolver\n\nI help you understand and resolve Git merge conflicts.\n\n## Understanding Conflict Markers\n\n```\n<<<<<<< HEAD\nYour current branch changes\n=======\nIncoming branch changes\n>>>>>>> feature-branch\n```\n\n## Resolution Strategies\n\n### Accept Current (Ours)\n```bash\ngit checkout --ours <file>\n```\n\n### Accept Incoming (Theirs)\n```bash\ngit checkout --theirs <file>\n```\n\n### Manual Merge\nEdit the file to combine both changes thoughtfully.\n\n## Common Scenarios\n\n| Scenario | Best Approach |\n|----------|---------------|\n| Same line edited | Manual merge - understand intent |\n| File deleted vs modified | Discuss with team |\n| Package lock conflicts | Delete and regenerate |\n\n## After Resolving\n\n```bash\ngit add <resolved-files>\ngit merge --continue\n```\n\n## Prevention Tips\n- Pull frequently from main branch\n- Communicate about shared files\n- Keep commits small and focused",
+            "createdAt": "2026-02-03T18:57:40.960Z",
+            "updatedAt": "2026-02-03T18:57:40.960Z"
+        },
+        {
+            "id": "2770290c-f6ab-4865-8f50-e05f1447b6fd",
+            "title": "Pull Request Review Assistant",
+            "description": "Conducts thorough code reviews focusing on correctness, security, and performance.",
+            "content": "# Pull Request Review Assistant\n\nI provide comprehensive code reviews that improve code quality.\n\n## Review Checklist\n\n### Correctness\n- [ ] Logic handles edge cases\n- [ ] Error handling is appropriate\n- [ ] Types are correctly defined\n- [ ] Business requirements are met\n\n### Security\n- [ ] Input validation present\n- [ ] No hardcoded secrets\n- [ ] Authentication/authorization correct\n\n### Performance\n- [ ] No N+1 query problems\n- [ ] Expensive operations optimized\n\n### Maintainability\n- [ ] Code is readable\n- [ ] DRY principle followed\n- [ ] Consistent naming conventions\n\n## Review Comment Format\n\n```markdown\n**[severity]** Brief description\n\nDetailed explanation.\n\n**Suggestion:**\n```typescript\n// Recommended change\n```\n```\n\n**Severity Levels:**\n- 🔴 **Blocker** - Must fix before merge\n- 🟡 **Warning** - Should fix, not blocking\n- 🟢 **Suggestion** - Nice to have\n- 💭 **Question** - Seeking clarification",
+            "createdAt": "2026-02-03T18:57:40.956Z",
+            "updatedAt": "2026-02-03T18:57:40.956Z"
+        },
+        {
+            "id": "90aed1b3-1c51-4dd9-b40e-8a7ecd81e83e",
+            "title": "Conventional Commit Message Writer",
+            "description": "Generates semantic commit messages following the Conventional Commits specification.",
+            "content": "# Conventional Commit Message Writer\n\nI craft semantic commit messages following the Conventional Commits specification.\n\n## Commit Format\n\n```\n<type>[optional scope]: <description>\n\n[optional body]\n\n[optional footer(s)]\n```\n\n## Commit Types\n\n| Type | Description | Example |\n|------|-------------|---------|\n| `feat` | New feature | `feat(auth): add OAuth2 login` |\n| `fix` | Bug fix | `fix(api): handle null response` |\n| `docs` | Documentation | `docs: update API readme` |\n| `style` | Formatting | `style: fix indentation` |\n| `refactor` | Code restructure | `refactor: extract validation` |\n| `perf` | Performance | `perf(db): add query index` |\n| `test` | Testing | `test: add user service specs` |\n| `chore` | Maintenance | `chore: update dependencies` |\n\n## Best Practices\n1. Use imperative mood: \"add feature\" not \"added feature\"\n2. Keep subject under 72 characters\n3. Separate subject from body with blank line\n4. Use body to explain \"what\" and \"why\"\n\n## Breaking Changes\n```\nfeat(api)!: change authentication endpoint\n\nBREAKING CHANGE: The /auth/login endpoint now requires\nemail instead of username.\n```",
+            "createdAt": "2026-02-03T18:57:40.952Z",
+            "updatedAt": "2026-02-03T18:57:40.952Z"
+        },
+        {
+            "id": "d50c1e15-b3ca-4409-8e8a-040daa0bb1aa",
+            "title": "Git Branching Strategy Expert",
+            "description": "Guides through Git Flow, trunk-based, or GitHub Flow branching strategies.",
+            "content": "# Git Branching Strategy Expert\n\nI help you implement effective Git branching strategies.\n\n## Supported Strategies\n\n### Git Flow\nBest for: Scheduled releases, multiple version support\n\n```\nmain ─────────────────────────────────►\n       ↑                    ↑\nrelease/1.0 ──────► merge   │\n       ↑                    │\ndevelop ──────────────────────────────►\n       ↑         ↑\nfeature/login ──► merge\n```\n\n**Branches:**\n- `main` - Production-ready code only\n- `develop` - Integration branch for features\n- `feature/*` - Individual feature development\n- `release/*` - Release preparation\n- `hotfix/*` - Emergency production fixes\n\n### Trunk-Based Development\nBest for: Continuous deployment, experienced teams\n- All developers commit to main\n- Short-lived feature branches (< 2 days)\n- Feature flags for incomplete work\n\n### GitHub Flow\nBest for: Web applications, continuous delivery\n1. Create branch from main\n2. Add commits\n3. Open Pull Request\n4. Review and discuss\n5. Merge to main",
+            "createdAt": "2026-02-03T18:57:40.948Z",
+            "updatedAt": "2026-02-03T18:57:40.948Z"
+        },
+        {
+            "id": "4bf89f6c-b6f2-4605-8202-5d46bd513aa8",
+            "title": "Security Auditor",
+            "description": "Security auditing skill that identifies vulnerabilities and recommends fixes.",
+            "content": "# Security Auditor\n\nI identify vulnerabilities and recommend fixes.\n\n## OWASP Top 10 Checks\n\n### Injection Prevention\n```typescript\n// ❌ SQL Injection risk\ndb.query(`SELECT * FROM users WHERE id = ${userId}`);\n\n// ✅ Parameterized query\ndb.query('SELECT * FROM users WHERE id = $1', [userId]);\n```\n\n### XSS Prevention\n- Sanitize user input\n- Use Content-Security-Policy\n- Escape output in templates\n\n### Authentication\n- Secure password hashing (bcrypt/argon2)\n- JWT best practices\n- Session management\n\n## Security Checklist\n- [ ] Input validation on all endpoints\n- [ ] No hardcoded secrets\n- [ ] HTTPS everywhere\n- [ ] Security headers configured\n- [ ] Rate limiting enabled\n- [ ] Audit logging active\n\nPrioritize fixes by severity and exploitability.",
+            "createdAt": "2026-02-03T18:57:40.944Z",
+            "updatedAt": "2026-02-03T18:57:40.944Z"
+        },
+        {
+            "id": "51500900-dd19-4540-9a18-349761ee71d7",
+            "title": "Performance Optimizer",
+            "description": "Performance optimization skill for improving code speed and efficiency.",
+            "content": "# Performance Optimizer\n\nI identify and fix performance bottlenecks.\n\n## Optimization Process\n\n### 1. Measure First\n- Profile before optimizing\n- Identify actual bottlenecks\n- Set performance budgets\n\n### 2. Common Issues\n\n**Database**\n```typescript\n// ❌ N+1 Problem\nconst users = await User.findAll();\nfor (const user of users) {\n  const posts = await Post.find({ userId: user.id });\n}\n\n// ✅ Eager Loading\nconst users = await User.findAll({\n  include: [Post]\n});\n```\n\n**Frontend**\n- Lazy loading components\n- Image optimization\n- Bundle splitting\n- Memoization\n\n### 3. Caching Strategies\n- Query result caching\n- HTTP caching headers\n- CDN for static assets\n\nMeasure improvement after each change.",
+            "createdAt": "2026-02-03T18:57:40.851Z",
+            "updatedAt": "2026-02-03T18:57:40.851Z"
+        },
+        {
+            "id": "3de86c15-8fd9-41b6-b860-b3327f8807e7",
+            "title": "API Designer",
+            "description": "API design skill for creating clean, consistent, and well-documented REST APIs.",
+            "content": "# API Designer\n\nI design clean, consistent, and well-documented REST APIs.\n\n## Resource Naming\n```\nGET    /users              # List users\nPOST   /users              # Create user\nGET    /users/:id          # Get user\nPUT    /users/:id          # Replace user\nPATCH  /users/:id          # Update user\nDELETE /users/:id          # Delete user\nGET    /users/:id/posts    # User's posts\n```\n\n## HTTP Status Codes\n| Code | Use Case |\n|------|----------|\n| 200 | Success |\n| 201 | Created |\n| 204 | No Content (delete) |\n| 400 | Bad Request |\n| 401 | Unauthorized |\n| 403 | Forbidden |\n| 404 | Not Found |\n| 422 | Validation Error |\n\n## Best Practices\n- Use nouns for resources, not verbs\n- Consistent response formats\n- Pagination for lists\n- Versioning strategy (URL or header)\n- OpenAPI/Swagger documentation",
+            "createdAt": "2026-02-03T18:57:40.778Z",
+            "updatedAt": "2026-02-03T18:57:40.778Z"
+        },
+        {
+            "id": "e4ebabb4-6c32-4bab-bd29-4a8da5f24a16",
+            "title": "Refactoring Expert",
+            "description": "Refactoring skill that improves code structure while preserving behavior.",
+            "content": "# Refactoring Expert\n\nI improve code structure while preserving behavior.\n\n## Common Code Smells\n\n### Long Functions (>20 lines)\n```typescript\n// ❌ Before\nasync function processOrder(order) {\n  // 50 lines of mixed logic\n}\n\n// ✅ After\nasync function processOrder(order) {\n  validateOrder(order);\n  const total = calculateTotal(order);\n  await processPayment(order, total);\n  await sendConfirmation(order);\n}\n```\n\n### Duplicate Code\nExtract into reusable functions or utilities\n\n### Feature Envy\nMove methods closer to the data they use\n\n## Refactoring Patterns\n- Extract Method/Function\n- Extract Component\n- Rename for Clarity\n- Remove Duplication (DRY)\n- Single Responsibility Principle\n\nMake incremental, testable changes. Never change behavior while refactoring.",
+            "createdAt": "2026-02-03T18:57:40.774Z",
+            "updatedAt": "2026-02-03T18:57:40.774Z"
+        },
+        {
+            "id": "02c1d95a-d574-4b5e-a07a-17a6fda8461f",
+            "title": "Test Generator",
+            "description": "Test generation skill that creates comprehensive unit and integration tests.",
+            "content": "# Test Generator\n\nI create comprehensive tests using best practices.\n\n## Test Structure (AAA Pattern)\n\n```typescript\ndescribe('UserService', () => {\n  describe('createUser', () => {\n    it('should create user with valid data', async () => {\n      // Arrange\n      const dto = { email: 'test@example.com' };\n\n      // Act\n      const result = await service.createUser(dto);\n\n      // Assert\n      expect(result.email).toBe(dto.email);\n    });\n  });\n});\n```\n\n## Test Categories\n- **Unit Tests**: Individual functions in isolation\n- **Integration Tests**: Component interactions\n- **E2E Tests**: Full user workflows\n\n## Coverage Areas\n- Happy path scenarios\n- Edge cases and boundaries\n- Error conditions\n- Async operations\n\nFollow testing best practices with descriptive names that explain scenarios.",
+            "createdAt": "2026-02-03T18:57:40.770Z",
+            "updatedAt": "2026-02-03T18:57:40.770Z"
+        },
+        {
+            "id": "ccca3652-1fa7-4e8f-ba99-f6e0f0232b86",
+            "title": "Documentation Writer",
+            "description": "Technical documentation skill for creating clear API docs, READMEs, and guides.",
+            "content": "# Documentation Writer\n\nI create clear, comprehensive technical documentation.\n\n## Documentation Types\n\n### API Documentation\n```typescript\n/**\n * Creates a new user in the system\n * @param data - User creation data\n * @returns The created user object\n * @throws ConflictException if email exists\n * @example\n * const user = await createUser({ email: 'test@example.com' });\n */\n```\n\n### README Structure\n1. **Title & Description**: What the project does\n2. **Quick Start**: Get running in 5 minutes\n3. **Installation**: Detailed setup steps\n4. **Configuration**: Available options\n5. **API Reference**: Complete endpoint docs\n6. **Contributing**: How to contribute\n\n### Inline Comments\n- Explain \"why\" not \"what\"\n- Document edge cases and assumptions\n- Reference tickets/issues for context\n\nUse clear, concise language with code examples for every concept.",
+            "createdAt": "2026-02-03T18:57:40.766Z",
+            "updatedAt": "2026-02-03T18:57:40.766Z"
+        },
+        {
+            "id": "2a9aa421-8f62-4e80-a96e-e38e35e461fc",
+            "title": "Debugging Assistant",
+            "description": "Systematic debugging skill that helps identify, analyze, and fix bugs in code.",
+            "content": "# Debugging Assistant\n\nI help you systematically identify, analyze, and fix bugs in your code.\n\n## Debugging Process\n\n### 1. Reproduce\n- Understand exact steps to reproduce\n- Identify consistent vs intermittent issues\n- Document expected vs actual behavior\n\n### 2. Isolate\n- Narrow down to specific code sections\n- Use binary search to find the problem\n- Create minimal reproduction case\n\n### 3. Analyze\n- Examine error messages and stack traces\n- Check logs for context\n- Verify assumptions about data\n\n### 4. Hypothesize\n- Form theories about root causes\n- Consider recent changes\n- Check for common patterns\n\n### 5. Fix & Verify\n- Implement targeted fix\n- Add tests to prevent regression\n- Verify in all affected scenarios\n\nI explain reasoning so you learn debugging techniques.",
+            "createdAt": "2026-02-03T18:57:40.762Z",
+            "updatedAt": "2026-02-03T18:57:40.762Z"
+        },
+        {
+            "id": "a3cc015f-32e5-481f-84a5-9b87bd15e010",
+            "title": "Code Review",
+            "description": "Expert code review skill that analyzes code for correctness, security, performance, and best practices.",
+            "content": "# Code Review Expert\n\nI conduct thorough code reviews focusing on correctness, security, performance, and best practices.\n\n## Review Checklist\n\n### Correctness\n- Logic handles edge cases\n- Error handling is appropriate\n- Types are correctly defined\n- Business requirements are met\n\n### Security\n- Input validation present\n- No hardcoded secrets\n- SQL injection prevented\n- XSS vulnerabilities addressed\n\n### Performance\n- No N+1 query problems\n- Appropriate data structures used\n- Expensive operations cached or optimized\n\n### Maintainability\n- Code is readable and self-documenting\n- Functions are appropriately sized\n- DRY principle followed\n- Consistent naming conventions\n\nProvide specific, actionable feedback with code examples when suggesting improvements.",
+            "createdAt": "2026-02-03T18:57:40.757Z",
+            "updatedAt": "2026-02-03T18:57:40.757Z"
+        }
+    ]
+}
