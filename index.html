@@ -3,36 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MockPeer | Library</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>MockPeer | Prompts & Agents</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #000000;
-            color: #ffffff;
+        :root {
+            --bg: #030303;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08);
+            --accent: #3b82f6;
+            --text-main: #ededed;
+            --text-dim: #a1a1aa;
         }
-        .sidebar-border { border-right: 1px solid rgba(255, 255, 255, 0.1); }
-        .card-border { border: 1px solid rgba(255, 255, 255, 0.08); }
-        .header-border { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-        
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #000; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
 
-        .search-input {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .search-input:focus {
-            border-color: #3b82f6;
-            outline: none;
-            background: rgba(255, 255, 255, 0.05);
-        }
-    </style>
-</head>
-<body class="flex h-screen overflow-hidden">
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 60px 20px;
+            overflow-x: hidden;
             line-height: 1.5;
         }
 
