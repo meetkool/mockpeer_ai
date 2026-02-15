@@ -1,5 +1,13 @@
 {
+  "name": "mockpeer",
+  "version": "1.0.0",
+  "description": "MockPeer - Skills, Prompts & Agents Library",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
   "dependencies": {
+    "express": "^4.18.2",
     "vercel": "^50.17.1"
   }
 }

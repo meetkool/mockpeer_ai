@@ -1,297 +1,504 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MockPeer | Prompts & Agents</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>MockPeer | Skill Library</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        :root {
-            --bg: #030303;
-            --card-bg: rgba(255, 255, 255, 0.03);
-            --border: rgba(255, 255, 255, 0.08);
-            --accent: #3b82f6;
-            --text-main: #ededed;
-            --text-dim: #a1a1aa;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background-color: var(--bg);
-            color: var(--text-main);
-            min-height: 100vh;
-            padding: 60px 20px;
-            overflow-x: hidden;
-            line-height: 1.5;
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            color: #ffffff;
         }
 
-        .grid-overlay {
-            position: fixed;
-            inset: 0;
-            background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
-            background-size: 32px 32px;
-            z-index: -1;
+        .sidebar-border {
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .glow {
-            position: fixed;
-            top: -10%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 600px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
-            z-index: -1;
-            pointer-events: none;
+        .card-border {
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
+        .header-border {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        header {
-            text-align: center;
-            margin-bottom: 80px;
+        ::-webkit-scrollbar {
+            width: 6px;
         }
 
-        header h1 {
-            font-size: 3.5rem;
-            font-weight: 700;
-            letter-spacing: -0.04em;
-            background: linear-gradient(to bottom, #fff 40%, #71717a);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 16px;
+        ::-webkit-scrollbar-track {
+            background: #000;
         }
 
-        header p {
-            font-size: 1.25rem;
-            color: var(--text-dim);
-            font-weight: 300;
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 10px;
         }
 
-        .intro-text {
-            text-align: center;
-            margin-bottom: 60px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
+        .search-input {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .intro-text h2 {
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-            color: var(--accent);
-        }
-
-        .intro-text p {
-            color: var(--text-dim);
-            line-height: 1.8;
-            font-size: 1.05rem;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 30px;
-            margin-bottom: 60px;
-        }
-
-        .feature-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 40px 30px;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            backdrop-filter: blur(4px);
-            text-decoration: none;
-            color: inherit;
-        }
-
-        .feature-card:hover {
-            border-color: rgba(59, 130, 246, 0.5);
+        .search-input:focus {
+            border-color: #3b82f6;
+            outline: none;
             background: rgba(255, 255, 255, 0.05);
-            transform: translateY(-6px);
         }
 
-        .feature-icon {
-            font-size: 2.5rem;
-            margin-bottom: 16px;
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            transition: all 0.15s ease;
         }
 
-        .feature-card h3 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 12px;
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
         }
 
-        .feature-card p {
-            color: var(--text-dim);
-            font-size: 0.95rem;
-            margin-bottom: 24px;
-            flex-grow: 1;
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
         }
 
-        .feature-card .btn {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 600;
+        .tab-btn {
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            background: #fff;
+            color: #000;
+        }
+
+        .tab-btn:not(.active) {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #9ca3af;
+        }
+
+        .tab-btn:not(.active):hover {
+            color: #fff;
+        }
+
+        .item-card {
+            background: rgba(255, 255, 255, 0.02);
             transition: all 0.2s ease;
-            align-self: flex-start;
+            cursor: pointer;
         }
 
-        .feature-card .btn:hover {
-            opacity: 0.9;
-            transform: translateX(4px);
+        .item-card:hover {
+            background: rgba(255, 255, 255, 0.04);
         }
 
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 60px;
+        .item-card:hover .item-title {
+            color: #60a5fa;
         }
 
-        .stat-box {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-            text-align: center;
-            backdrop-filter: blur(4px);
-        }
-
-        .stat-number {
-            font-size: 2rem;
+        .section-title {
+            font-size: 0.625rem;
             font-weight: 700;
-            color: var(--accent);
-            margin-bottom: 8px;
-        }
-
-        .stat-label {
-            color: var(--text-dim);
-            font-size: 0.9rem;
-        }
-
-        footer {
-            text-align: center;
-            margin-top: 80px;
-            padding-top: 40px;
-            border-top: 1px solid var(--border);
-            color: var(--text-dim);
-            font-size: 0.9rem;
-        }
-
-        @media (max-width: 768px) {
-            header h1 {
-                font-size: 2.5rem;
-            }
-
-            .grid {
-                grid-template-columns: 1fr;
-            }
-
-            .intro-text h2 {
-                font-size: 1.2rem;
-            }
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.125rem 0.5rem;
+            border-radius: 0.25rem;
         }
     </style>
 </head>
-<body>
-    <div class="grid-overlay"></div>
-    <div class="glow"></div>
 
-    <div class="container">
-        <header>
-            <h1>MockPeer</h1>
-            <p>Your development companion platform</p>
+<body class="flex h-screen overflow-hidden">
+
+    <aside class="w-64 sidebar-border flex flex-col p-4 shrink-0">
+        <div class="flex items-center gap-2 px-2 mb-8">
+            <div class="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
+                <i data-lucide="zap" class="w-4 h-4 text-white"></i>
+            </div>
+            <span class="font-bold tracking-tight text-lg">MockPeer</span>
+        </div>
+
+        <nav class="space-y-1">
+            <a href="#" class="nav-item active" data-section="skills">
+                <i data-lucide="target" class="w-4 h-4 text-blue-500"></i> Skills
+            </a>
+            <a href="#" class="nav-item" data-section="prompts">
+                <i data-lucide="file-code" class="w-4 h-4"></i> Prompts
+            </a>
+            <a href="#" class="nav-item" data-section="agents">
+                <i data-lucide="bot" class="w-4 h-4"></i> Agents
+            </a>
+        </nav>
+
+        <div class="mt-auto p-2">
+            <div class="flex items-center gap-3 px-2 py-3 bg-white/5 rounded-lg border border-white/5">
+                <div
+                    class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold">
+                    M</div>
+                <div class="overflow-hidden">
+                    <p class="text-xs font-medium truncate">Meet Bhanushali</p>
+                    <p class="text-[10px] text-gray-500 truncate">SDE-1 @ Resolect</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col overflow-hidden">
+        <header class="h-14 header-border flex items-center justify-between px-6 bg-black/50 backdrop-blur-md">
+            <div class="flex items-center gap-4">
+                <h1 class="text-sm font-semibold" id="sectionTitle">Skills</h1>
+                <div class="h-4 w-[1px] bg-white/10"></div>
+                <p class="text-xs text-gray-500" id="totalCount">128 Total Abilities</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button class="text-gray-400 hover:text-white transition"><i data-lucide="bell"
+                        class="w-4 h-4"></i></button>
+                <button
+                    class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-md font-medium transition">+
+                    New</button>
+            </div>
         </header>
 
-        <div class="intro-text">
-            <h2>Everything You Need</h2>
-            <p>Access curated prompts for common development tasks and specialized AI agents designed to help you build faster and better.</p>
-        </div>
-
-        <div class="grid">
-            <a href="./prompt/" class="feature-card" style="text-decoration: none; color: inherit;">
-                <div class="feature-icon">📝</div>
-                <h3>Development Prompts</h3>
-                <p>A curated library of modular code components and implementation guides for common development patterns.</p>
-                <button class="btn">Browse Prompts →</button>
-            </a>
-
-            <a href="./agents/" class="feature-card" style="text-decoration: none; color: inherit;">
-                <div class="feature-icon">🤖</div>
-                <h3>AI Agents</h3>
-                <p>Specialized AI agents for different development tasks. Each with expert-level knowledge and best practices.</p>
-                <button class="btn">View Agents →</button>
-            </a>
-
-            <a href="./skills/" class="feature-card" style="text-decoration: none; color: inherit;">
-                <div class="feature-icon">🎯</div>
-                <h3>Development Skills</h3>
-                <p>Master essential development patterns, best practices, and proven techniques used by industry experts.</p>
-                <button class="btn">Learn Skills →</button>
-            </a>
-        </div>
-
-        <div class="stats">
-            <div class="stat-box">
-                <div class="stat-number" id="promptCount">15+</div>
-                <div class="stat-label">Development Prompts</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-number" id="agentCount">10+</div>
-                <div class="stat-label">AI Agents</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-number" id="skillCount">20+</div>
-                <div class="stat-label">Development Skills</div>
+        <div class="px-6 py-4 header-border">
+            <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div class="relative w-full md:w-96">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+                    <input type="text" id="searchInput" placeholder="Search..."
+                        class="search-input w-full pl-10 pr-4 py-2 rounded-lg text-sm">
+                </div>
+                <div class="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0" id="filterTabs">
+                    <button class="tab-btn active" data-filter="all">All</button>
+                    <button class="tab-btn" data-filter="development">Development</button>
+                    <button class="tab-btn" data-filter="devops">DevOps</button>
+                    <button class="tab-btn" data-filter="security">Security</button>
+                </div>
             </div>
         </div>
 
-        <footer>
-            <p>Built with ❤️ for developers. Updated in 2026.</p>
-        </footer>
-    </div>
+        <div class="flex-1 overflow-y-auto p-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="itemsGrid">
+            </div>
+        </div>
+    </main>
+
+
 
     <script>
-        // Load stats from data files
-        async function loadStats() {
+        let skillsData = [];
+        let promptsData = [];
+        let agentsData = [];
+        let currentSection = 'skills';
+        let currentFilter = 'all';
+
+        const icons = {
+            skills: {
+                'Authentication Patterns': 'lock',
+                'Error Handling Best Practices': 'alert-circle',
+                'Vitest Unit Testing': 'test-tube',
+                'Playwright E2E Testing': 'globe',
+                'tRPC Type-Safe APIs': 'link',
+                'GraphQL API Development': 'share-2',
+                'Kubernetes Basics': 'box',
+                'Docker Containerization': 'container',
+                'Socket.io Real-time': 'radio',
+                'React Query Data Fetching': 'database',
+                'Zod Schema Validation': 'check-circle',
+                'shadcn/ui Components': 'palette',
+                'TailwindCSS Styling': 'paintbrush',
+                'Next.js App Router': 'layout',
+                'Stripe Payment Integration': 'credit-card',
+                'Redis Caching Patterns': 'hard-drive',
+                'Prisma ORM': 'database',
+                'OpenAPI/Swagger Documentation': 'book-open',
+                'GitHub Actions CI/CD': 'git-branch',
+                'Monorepo Management': 'layers',
+                'AWS CDK Infrastructure': 'cloud',
+                'AWS Secrets Management': 'key',
+                'AWS RDS Database': 'server',
+                'AWS ECS Containers': 'boxes',
+                'AWS IAM Security': 'shield',
+                'AWS CloudWatch Monitoring': 'activity',
+                'AWS SQS Message Queues': 'message-square',
+                'AWS DynamoDB': 'table',
+                'AWS Lambda Functions': 'zap',
+                'AWS S3 File Storage': 'folder',
+                'default': 'target'
+            },
+            prompts: {
+                'Build Data Table': 'table',
+                'Create Modal Component': 'maximize-2',
+                'Add Social Login': 'log-in',
+                'Implement Password Reset': 'key',
+                'Build Settings Page': 'settings',
+                'Add Tagging System': 'tag',
+                'Implement Favorites/Bookmarks': 'bookmark',
+                'Add Activity Feed': 'rss',
+                'Implement Comments System': 'message-circle',
+                'Build Notification System': 'bell',
+                'Add Export Feature': 'download',
+                'Build Search Feature': 'search',
+                'Implement Audit Logging': 'clipboard',
+                'Create Email Template': 'mail',
+                'Add Input Sanitization': 'shield',
+                'Implement Soft Delete': 'trash-2',
+                'Handle File Upload': 'upload',
+                'Build REST API': 'api',
+                'Implement Authorization': 'lock',
+                'Set Up Secrets Management': 'key',
+                'Configure Auto Scaling': 'trending-up',
+                'Set Up Load Balancer': 'server',
+                'Configure SSL/TLS': 'lock',
+                'Set Up Database Backup': 'database',
+                'Configure Nginx': 'server',
+                'Set Up Monitoring': 'activity',
+                'Deploy to AWS': 'cloud',
+                'Configure Docker': 'docker',
+                'default': 'file-code'
+            },
+            agents: {
+                'Data Migration Agent': 'database',
+                'Session Management Agent': 'key',
+                'Database Backup Agent': 'database',
+                'Configuration Management Agent': 'settings',
+                'Metrics Agent': 'bar-chart-2',
+                'Logging Agent': 'file-text',
+                'Webhook Agent': 'webhook',
+                'Background Jobs Agent': 'clock',
+                'File Upload Agent': 'upload',
+                'Rate Limiting Agent': 'shield',
+                'Notification System Agent': 'bell',
+                'Web Scraping Agent': 'globe',
+                'Accessibility Audit Agent': 'eye',
+                'Search Implementation Agent': 'search',
+                'Feature Flag Agent': 'flag',
+                'Billing System Agent': 'credit-card',
+                'Media Processing Agent': 'image',
+                'Email System Agent': 'mail',
+                'Content Management Agent': 'book',
+                'API Versioning Agent': 'git-branch',
+                'User Analytics Agent': 'bar-chart',
+                'Localization Agent': 'globe',
+                'Code Quality Agent': 'check-circle',
+                'Real-Time Data Agent': 'radio',
+                'Data Privacy Agent': 'shield',
+                'Error Recovery Agent': 'refresh-cw',
+                'Code Migration Agent': 'code',
+                'Environment Configuration Agent': 'settings',
+                'API Testing Agent': 'test-tube',
+                'Git Workflow Agent': 'git-branch',
+                'SEO Optimization Agent': 'search',
+                'Accessibility Expert Agent': 'eye',
+                'Mobile Performance Agent': 'smartphone',
+                'default': 'bot'
+            }
+        };
+
+        function getIcon(type, title) {
+            return icons[type]?.[title] || icons[type]?.['default'] || 'zap';
+        }
+
+        function getCategoryColor(category) {
+            const colors = {
+                'development': { bg: 'blue-500/10', border: 'blue-500/20', icon: 'blue-400', text: 'blue-400' },
+                'devops': { bg: 'green-500/10', border: 'green-500/20', icon: 'green-400', text: 'green-400' },
+                'security': { bg: 'red-500/10', border: 'red-500/20', icon: 'red-400', text: 'red-400' },
+                'ml': { bg: 'purple-500/10', border: 'purple-500/20', icon: 'purple-400', text: 'purple-400' },
+                'default': { bg: 'gray-500/10', border: 'gray-500/20', icon: 'gray-400', text: 'gray-400' }
+            };
+            return colors[category] || colors['default'];
+        }
+
+        function getStatusInfo(item) {
+            if (item.usageCount) {
+                return { icon: 'play', text: `Used ${item.usageCount}k times`, color: 'green-500' };
+            }
+            const updated = new Date(item.updatedAt);
+            const now = new Date();
+            const hours = Math.floor((now - updated) / (1000 * 60 * 60));
+            if (hours < 1) return { icon: 'clock', text: 'Updated just now', color: 'orange-500' };
+            if (hours < 24) return { icon: 'clock', text: `Updated ${hours}h ago`, color: 'orange-500' };
+            const days = Math.floor(hours / 24);
+            return { icon: 'clock', text: `Updated ${days}d ago`, color: 'gray-500' };
+        }
+
+        let currentContent = '';
+
+
+
+        function renderSkills(items) {
+            const grid = document.getElementById('itemsGrid');
+            grid.innerHTML = items.map(item => {
+                const color = getCategoryColor('default');
+                const status = getStatusInfo(item);
+                const iconName = getIcon('skills', item.title);
+                return `
+                    <div class="card-border rounded-xl p-4 item-card">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="w-8 h-8 rounded flex items-center justify-center border ${color.bg} ${color.border}">
+                                <i data-lucide="${iconName}" class="w-4 h-4 text-${color.icon}"></i>
+                            </div>
+                            <span class="section-title">Skill</span>
+                        </div>
+                        <h3 class="font-semibold text-sm mb-1 item-title">${item.title}</h3>
+                        <p class="text-xs text-gray-500 line-clamp-2 mb-4 leading-relaxed">${item.description}</p>
+                        <div class="pt-3 border-t border-white/5 flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <i data-lucide="${status.icon}" class="w-3 h-3 text-${status.color}"></i>
+                                <span class="text-[10px] text-gray-400">${status.text}</span>
+                            </div>
+                            <i data-lucide="more-horizontal" class="w-4 h-4 text-gray-600 hover:text-white"></i>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function renderPrompts(items) {
+            const grid = document.getElementById('itemsGrid');
+            grid.innerHTML = items.map(item => {
+                const color = getCategoryColor(item.category || 'development');
+                const iconName = getIcon('prompts', item.title);
+                return `
+                    <div class="card-border rounded-xl p-4 item-card">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="w-8 h-8 rounded flex items-center justify-center border ${color.bg} ${color.border}">
+                                <i data-lucide="${iconName}" class="w-4 h-4 text-${color.icon}"></i>
+                            </div>
+                            <span class="section-title">Prompt</span>
+                        </div>
+                        <h3 class="font-semibold text-sm mb-1 item-title">${item.title}</h3>
+                        <p class="text-xs text-gray-500 line-clamp-2 mb-4 leading-relaxed">${item.description}</p>
+                        <div class="pt-3 border-t border-white/5 flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] px-2 py-0.5 rounded bg-white/5 text-gray-400">${item.category || 'development'}</span>
+                            </div>
+                            <i data-lucide="more-horizontal" class="w-4 h-4 text-gray-600 hover:text-white"></i>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function renderAgents(items) {
+            const grid = document.getElementById('itemsGrid');
+            grid.innerHTML = items.map(item => {
+                const color = getCategoryColor('default');
+                const iconName = getIcon('agents', item.name);
+                return `
+                    <div class="card-border rounded-xl p-4 item-card">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                                <i data-lucide="${iconName}" class="w-4 h-4 text-white"></i>
+                            </div>
+                            <span class="section-title">Agent</span>
+                        </div>
+                        <h3 class="font-semibold text-sm mb-1 item-title">${item.name}</h3>
+                        <p class="text-xs text-gray-500 line-clamp-2 mb-4 leading-relaxed">${item.description}</p>
+                        <div class="pt-3 border-t border-white/5 flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <i data-lucide="zap" class="w-3 h-3 text-yellow-500"></i>
+                                <span class="text-[10px] text-gray-400">Expert Agent</span>
+                            </div>
+                            <i data-lucide="more-horizontal" class="w-4 h-4 text-gray-600 hover:text-white"></i>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function filterItems(items) {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            return items.filter(item => {
+                const matchesSearch = !searchTerm ||
+                    (item.title || item.name).toLowerCase().includes(searchTerm) ||
+                    (item.description || '').toLowerCase().includes(searchTerm);
+                return matchesSearch;
+            });
+        }
+
+        function updateDisplay() {
+            let items;
+            let title;
+            let count;
+
+            switch (currentSection) {
+                case 'skills':
+                    items = filterItems(skillsData);
+                    title = 'Skills';
+                    count = `${skillsData.length} Total Abilities`;
+                    renderSkills(items);
+                    break;
+                case 'prompts':
+                    items = filterItems(promptsData);
+                    title = 'Prompts';
+                    count = `${promptsData.length} Total Prompts`;
+                    renderPrompts(items);
+                    break;
+                case 'agents':
+                    items = filterItems(agentsData);
+                    title = 'Agents';
+                    count = `${agentsData.length} Total Agents`;
+                    renderAgents(items);
+                    break;
+            }
+
+            document.getElementById('sectionTitle').textContent = title;
+            document.getElementById('totalCount').textContent = count;
+        }
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                currentSection = item.dataset.section;
+                updateDisplay();
+            });
+        });
+
+        document.getElementById('searchInput').addEventListener('input', updateDisplay);
+
+        async function loadData() {
             try {
-                const promptsRes = await fetch('./prompt/data.json');
-                const promptsData = await promptsRes.json();
-                document.getElementById('promptCount').textContent = promptsData.prompts.length + '+';
+                const [skillsRes, promptsRes, agentsRes] = await Promise.all([
+                    fetch('./skills/data.json'),
+                    fetch('./prompt/data.json'),
+                    fetch('./agents/data.json')
+                ]);
 
-                const skillsRes = await fetch('./skills/data.json');
-                const skillsData = await skillsRes.json();
-                document.getElementById('skillCount').textContent = skillsData.skills.length + '+';
+                const skillsJson = await skillsRes.json();
+                const promptsJson = await promptsRes.json();
+                const agentsJson = await agentsRes.json();
 
-                // Uncomment when agents data is available
-                // const agentsRes = await fetch('./agents/data.json');
-                // const agentsData = await agentsRes.json();
-                // document.getElementById('agentCount').textContent = agentsData.agents.length + '+';
+                skillsData = skillsJson.skills;
+                promptsData = promptsJson.prompts;
+                agentsData = agentsJson.agents;
+
+                updateDisplay();
             } catch (error) {
-                console.error('Error loading stats:', error);
+                console.error('Error loading data:', error);
             }
         }
 
-        loadStats();
+        loadData();
     </script>
 </body>
+
 </html>
