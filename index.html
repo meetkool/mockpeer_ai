@@ -124,22 +124,35 @@
 
 <body class="flex h-screen overflow-hidden">
 
-    <aside class="w-64 sidebar-border flex flex-col p-4 shrink-0">
-        <div class="flex items-center gap-2 px-2 mb-8">
-            <div class="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
-                <i data-lucide="zap" class="w-4 h-4 text-white"></i>
+    <!-- Sidebar Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden backdrop-blur-sm transition-opacity"
+        onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar"
+        class="fixed inset-y-0 left-0 z-50 w-64 bg-black sidebar-border flex flex-col p-4 transform transition-transform duration-300 -translate-x-full md:translate-x-0 md:static md:shrink-0">
+        <div class="flex items-center justify-between px-2 mb-8">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
+                    <i data-lucide="zap" class="w-4 h-4 text-white"></i>
+                </div>
+                <span class="font-bold tracking-tight text-lg">MockPeer</span>
             </div>
-            <span class="font-bold tracking-tight text-lg">MockPeer</span>
+            <!-- Mobile Close Button -->
+            <button onclick="toggleSidebar()" class="md:hidden text-gray-400 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
         </div>
 
         <nav class="space-y-1">
-            <a href="#" class="nav-item active" data-section="skills">
+            <a href="#" class="nav-item active" data-section="skills"
+                onclick="if(window.innerWidth < 768) toggleSidebar()">
                 <i data-lucide="target" class="w-4 h-4 text-blue-500"></i> Skills
             </a>
-            <a href="#" class="nav-item" data-section="prompts">
+            <a href="#" class="nav-item" data-section="prompts" onclick="if(window.innerWidth < 768) toggleSidebar()">
                 <i data-lucide="file-code" class="w-4 h-4"></i> Prompts
             </a>
-            <a href="#" class="nav-item" data-section="agents">
+            <a href="#" class="nav-item" data-section="agents" onclick="if(window.innerWidth < 768) toggleSidebar()">
                 <i data-lucide="bot" class="w-4 h-4"></i> Agents
             </a>
         </nav>
@@ -160,9 +173,13 @@
     <main class="flex-1 flex flex-col overflow-hidden">
         <header class="h-14 header-border flex items-center justify-between px-6 bg-black/50 backdrop-blur-md">
             <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="md:hidden text-gray-400 hover:text-white">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
                 <h1 class="text-sm font-semibold" id="sectionTitle">Skills</h1>
                 <div class="h-4 w-[1px] bg-white/10"></div>
-                <p class="text-xs text-gray-500" id="totalCount">128 Total Abilities</p>
+                <p class="text-xs text-gray-500 truncate max-w-[120px] sm:max-w-none" id="totalCount">128 Total
+                    Abilities</p>
             </div>
             <div class="flex items-center gap-3">
                 <button class="text-gray-400 hover:text-white transition"><i data-lucide="bell"
@@ -197,29 +214,35 @@
 
     <div id="detailModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeModal()"></div>
-        
-        <div class="relative bg-[#0a0a0a] border border-white/10 rounded-xl w-full max-w-3xl m-4 max-h-[85vh] flex flex-col shadow-2xl">
+
+        <div
+            class="relative bg-[#0a0a0a] border border-white/10 rounded-xl w-full max-w-3xl m-4 max-h-[85vh] flex flex-col shadow-2xl">
             <div class="flex items-center justify-between p-6 border-b border-white/10 bg-white/5 rounded-t-xl">
                 <h2 id="modalTitle" class="text-xl font-bold text-white tracking-tight"></h2>
-                <button onclick="closeModal()" class="p-2 text-gray-400 hover:text-white transition hover:bg-white/10 rounded-lg">
+                <button onclick="closeModal()"
+                    class="p-2 text-gray-400 hover:text-white transition hover:bg-white/10 rounded-lg">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            
+
             <div class="p-6 overflow-y-auto custom-scrollbar">
-                <p id="modalDescription" class="text-gray-300 mb-6 text-lg leading-relaxed border-b border-white/5 pb-4"></p>
-                
+                <p id="modalDescription"
+                    class="text-gray-300 mb-6 text-lg leading-relaxed border-b border-white/5 pb-4"></p>
+
                 <div class="space-y-4">
                     <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Content Preview</h3>
                     <div class="relative group">
-                        <pre id="modalContent" class="bg-black/50 rounded-lg p-4 font-mono text-sm text-gray-300 whitespace-pre-wrap border border-white/5 overflow-x-auto"></pre>
+                        <pre id="modalContent"
+                            class="bg-black/50 rounded-lg p-4 font-mono text-sm text-gray-300 whitespace-pre-wrap border border-white/5 overflow-x-auto"></pre>
                     </div>
                 </div>
             </div>
-            
+
             <div class="p-4 border-t border-white/10 bg-white/5 rounded-b-xl flex justify-end gap-3">
-                <button onclick="closeModal()" class="px-4 py-2 text-sm text-gray-400 hover:text-white transition">Close</button>
-                <button onclick="copyModalContent(this)" class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-md font-medium transition flex items-center gap-2">
+                <button onclick="closeModal()"
+                    class="px-4 py-2 text-sm text-gray-400 hover:text-white transition">Close</button>
+                <button onclick="copyModalContent(this)"
+                    class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-md font-medium transition flex items-center gap-2">
                     <i data-lucide="copy" class="w-4 h-4"></i> Copy Content
                 </button>
             </div>
@@ -529,7 +552,7 @@
         loadData();
 
         // 1. Event Delegation: Listen for clicks on the grid container
-        document.getElementById('itemsGrid').addEventListener('click', function(e) {
+        document.getElementById('itemsGrid').addEventListener('click', function (e) {
             // Find the closest parent with class 'item-card'
             const card = e.target.closest('.item-card');
             if (!card) return; // If clicked outside a card, do nothing
@@ -561,13 +584,13 @@
             // Populate Data
             title.textContent = item.title || item.name;
             desc.textContent = item.description;
-            
+
             // Handle content (Skills have 'content', others might just have description)
             content.textContent = item.content || item.prompt || "No additional content details available.";
 
             // Show Modal
             modal.classList.remove('hidden');
-            
+
             // Refresh icons inside the modal if you have any
             lucide.createIcons();
         }
@@ -578,18 +601,18 @@
         }
 
         // 4. Close on Escape key
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') closeModal();
         });
 
         // 5. Function to Copy Content
         async function copyModalContent(button) {
             const content = document.getElementById('modalContent').textContent;
-            
+
             try {
                 // API to write to clipboard
                 await navigator.clipboard.writeText(content);
-                
+
                 // Visual Feedback: Change button text and color
                 const originalHTML = button.innerHTML;
                 button.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Copied!';
@@ -604,12 +627,30 @@
                     button.classList.add('bg-blue-600', 'hover:bg-blue-500');
                     lucide.createIcons();
                 }, 2000);
-                
+
             } catch (err) {
                 console.error('Failed to copy:', err);
                 alert('Failed to copy content.');
             }
         }
+        // 6. Sidebar Toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            if (sidebar.classList.contains('-translate-x-full')) {
+                // Open
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                // Close
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // Initialize icons for static elements
+        lucide.createIcons();
     </script>
 </body>
 
