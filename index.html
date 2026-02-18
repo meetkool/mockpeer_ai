@@ -195,7 +195,36 @@
         </div>
     </main>
 
-
+    <div id="detailModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeModal()"></div>
+        
+        <div class="relative bg-[#0a0a0a] border border-white/10 rounded-xl w-full max-w-3xl m-4 max-h-[85vh] flex flex-col shadow-2xl">
+            <div class="flex items-center justify-between p-6 border-b border-white/10 bg-white/5 rounded-t-xl">
+                <h2 id="modalTitle" class="text-xl font-bold text-white tracking-tight"></h2>
+                <button onclick="closeModal()" class="p-2 text-gray-400 hover:text-white transition hover:bg-white/10 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto custom-scrollbar">
+                <p id="modalDescription" class="text-gray-300 mb-6 text-lg leading-relaxed border-b border-white/5 pb-4"></p>
+                
+                <div class="space-y-4">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Content Preview</h3>
+                    <div class="relative group">
+                        <pre id="modalContent" class="bg-black/50 rounded-lg p-4 font-mono text-sm text-gray-300 whitespace-pre-wrap border border-white/5 overflow-x-auto"></pre>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t border-white/10 bg-white/5 rounded-b-xl flex justify-end gap-3">
+                <button onclick="closeModal()" class="px-4 py-2 text-sm text-gray-400 hover:text-white transition">Close</button>
+                <button onclick="copyModalContent(this)" class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-md font-medium transition flex items-center gap-2">
+                    <i data-lucide="copy" class="w-4 h-4"></i> Copy Content
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
         let skillsData = [];
@@ -346,7 +375,7 @@
                 const status = getStatusInfo(item);
                 const iconName = getIcon('skills', item.title);
                 return `
-                    <div class="card-border rounded-xl p-4 item-card">
+                    <div class="card-border rounded-xl p-4 item-card group" data-id="${item.id}">
                         <div class="flex justify-between items-start mb-3">
                             <div class="w-8 h-8 rounded flex items-center justify-center border ${color.bg} ${color.border}">
                                 <i data-lucide="${iconName}" class="w-4 h-4 text-${color.icon}"></i>
@@ -374,7 +403,7 @@
                 const color = getCategoryColor(item.category || 'development');
                 const iconName = getIcon('prompts', item.title);
                 return `
-                    <div class="card-border rounded-xl p-4 item-card">
+                    <div class="card-border rounded-xl p-4 item-card group" data-id="${item.id || item.title}">
                         <div class="flex justify-between items-start mb-3">
                             <div class="w-8 h-8 rounded flex items-center justify-center border ${color.bg} ${color.border}">
                                 <i data-lucide="${iconName}" class="w-4 h-4 text-${color.icon}"></i>
@@ -401,7 +430,7 @@
                 const color = getCategoryColor('default');
                 const iconName = getIcon('agents', item.name);
                 return `
-                    <div class="card-border rounded-xl p-4 item-card">
+                    <div class="card-border rounded-xl p-4 item-card group" data-id="${item.id || item.name}">
                         <div class="flex justify-between items-start mb-3">
                             <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
                                 <i data-lucide="${iconName}" class="w-4 h-4 text-white"></i>
@@ -498,6 +527,89 @@
         }
 
         loadData();
+
+        // 1. Event Delegation: Listen for clicks on the grid container
+        document.getElementById('itemsGrid').addEventListener('click', function(e) {
+            // Find the closest parent with class 'item-card'
+            const card = e.target.closest('.item-card');
+            if (!card) return; // If clicked outside a card, do nothing
+
+            const id = card.dataset.id;
+            let item;
+
+            // Find the actual data object based on the current section
+            if (currentSection === 'skills') {
+                item = skillsData.find(i => i.id === id);
+            } else if (currentSection === 'prompts') {
+                item = promptsData.find(i => (i.id || i.title) === id);
+            } else if (currentSection === 'agents') {
+                item = agentsData.find(i => (i.id || i.name) === id);
+            }
+
+            if (item) {
+                openModal(item);
+            }
+        });
+
+        // 2. Function to Open Modal and populate data
+        function openModal(item) {
+            const modal = document.getElementById('detailModal');
+            const title = document.getElementById('modalTitle');
+            const desc = document.getElementById('modalDescription');
+            const content = document.getElementById('modalContent');
+
+            // Populate Data
+            title.textContent = item.title || item.name;
+            desc.textContent = item.description;
+            
+            // Handle content (Skills have 'content', others might just have description)
+            content.textContent = item.content || item.prompt || "No additional content details available.";
+
+            // Show Modal
+            modal.classList.remove('hidden');
+            
+            // Refresh icons inside the modal if you have any
+            lucide.createIcons();
+        }
+
+        // 3. Function to Close Modal
+        function closeModal() {
+            document.getElementById('detailModal').classList.add('hidden');
+        }
+
+        // 4. Close on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // 5. Function to Copy Content
+        async function copyModalContent(button) {
+            const content = document.getElementById('modalContent').textContent;
+            
+            try {
+                // API to write to clipboard
+                await navigator.clipboard.writeText(content);
+                
+                // Visual Feedback: Change button text and color
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Copied!';
+                button.classList.remove('bg-blue-600', 'hover:bg-blue-500');
+                button.classList.add('bg-green-600', 'hover:bg-green-500');
+                lucide.createIcons(); // Re-render the new check icon
+
+                // Reset button after 2 seconds
+                setTimeout(() => {
+                    button.innerHTML = '<i data-lucide="copy" class="w-4 h-4"></i> Copy Content';
+                    button.classList.remove('bg-green-600', 'hover:bg-green-500');
+                    button.classList.add('bg-blue-600', 'hover:bg-blue-500');
+                    lucide.createIcons();
+                }, 2000);
+                
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy content.');
+            }
+        }
     </script>
 </body>
 

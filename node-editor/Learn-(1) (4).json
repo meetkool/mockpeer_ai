@@ -1,0 +1,381 @@
+{
+  "meta": {
+    "mode": "learn",
+    "preset": "library_management",
+    "stage": "5"
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "user",
+        "type": "User",
+        "config": {
+          "name": "User",
+          "number_of_users": 100,
+          "requests_per_user": 1,
+          "description": "Patrons browsing the library catalog."
+        },
+        "position": {
+          "x": 80,
+          "y": 220
+        },
+        "x": 80,
+        "y": 220
+      },
+      {
+        "id": "edge",
+        "type": "Edge",
+        "config": {
+          "name": "Edge Gateway",
+          "capacity": 18000,
+          "base_latency": 4,
+          "description": "Edge ingress, DDoS protection, TLS termination, and WAF."
+        },
+        "position": {
+          "x": 200,
+          "y": 220
+        },
+        "x": 200,
+        "y": 220
+      },
+      {
+        "id": "api",
+        "type": "APIGateway",
+        "config": {
+          "name": "API Gateway",
+          "capacity": 15000,
+          "base_latency": 10,
+          "description": "Routes catalog requests and handles auth."
+        },
+        "position": {
+          "x": 340,
+          "y": 220
+        },
+        "x": 340,
+        "y": 220
+      },
+      {
+        "id": "rate",
+        "type": "RateLimiter",
+        "config": {
+          "name": "Rate Limiter",
+          "capacity": 15000,
+          "base_latency": 4,
+          "description": "Throttles abusive bursts to protect backend."
+        },
+        "position": {
+          "x": 480,
+          "y": 220
+        },
+        "x": 480,
+        "y": 220
+      },
+      {
+        "id": "lb",
+        "type": "LoadBalancer",
+        "config": {
+          "name": "Load Balancer",
+          "capacity": 13000,
+          "base_latency": 10,
+          "description": "Distributes traffic across app servers."
+        },
+        "position": {
+          "x": 620,
+          "y": 220
+        },
+        "x": 620,
+        "y": 220
+      },
+      {
+        "id": "app-a",
+        "type": "Server",
+        "config": {
+          "name": "Library App A",
+          "capacity": 10000,
+          "base_latency": 18,
+          "description": "App instance A."
+        },
+        "position": {
+          "x": 800,
+          "y": 160
+        },
+        "x": 800,
+        "y": 160
+      },
+      {
+        "id": "app-b",
+        "type": "Server",
+        "config": {
+          "name": "Library App B",
+          "capacity": 10000,
+          "base_latency": 18,
+          "description": "App instance B."
+        },
+        "position": {
+          "x": 800,
+          "y": 280
+        },
+        "x": 800,
+        "y": 280
+      },
+      {
+        "id": "cache",
+        "type": "Cache",
+        "config": {
+          "name": "Catalog Cache",
+          "capacity": 14000,
+          "base_latency": 5,
+          "description": "Caches popular catalog lookups."
+        },
+        "position": {
+          "x": 1000,
+          "y": 120
+        },
+        "x": 1000,
+        "y": 120
+      },
+      {
+        "id": "search",
+        "type": "SearchIndex",
+        "config": {
+          "name": "Search Index",
+          "capacity": 12000,
+          "base_latency": 12,
+          "description": "Indexes titles and authors for fast search."
+        },
+        "position": {
+          "x": 1000,
+          "y": 320
+        },
+        "x": 1000,
+        "y": 320
+      },
+      {
+        "id": "queue_index_s5",
+        "type": "Queue",
+        "config": {
+          "name": "Indexing Queue",
+          "capacity": 9000,
+          "base_latency": 12,
+          "description": "Buffers catalog change events for async indexing."
+        },
+        "position": {
+          "x": 1160,
+          "y": 320
+        },
+        "x": 1160,
+        "y": 320
+      },
+      {
+        "id": "worker_index_s5",
+        "type": "Worker",
+        "config": {
+          "name": "Indexing Worker",
+          "capacity": 9000,
+          "base_latency": 18,
+          "description": "Consumes indexing events and updates the search index."
+        },
+        "position": {
+          "x": 1320,
+          "y": 320
+        },
+        "x": 1320,
+        "y": 320
+      },
+      {
+        "id": "queue",
+        "type": "Queue",
+        "config": {
+          "name": "Notification Queue",
+          "capacity": 12000,
+          "base_latency": 12,
+          "description": "Buffers overdue and hold notifications."
+        },
+        "position": {
+          "x": 1200,
+          "y": 400
+        },
+        "x": 1200,
+        "y": 400
+      },
+      {
+        "id": "worker",
+        "type": "Worker",
+        "config": {
+          "name": "Notification Worker Pool",
+          "capacity": 11000,
+          "base_latency": 16,
+          "description": "Sends queued notifications to patrons. Idempotency enforced."
+        },
+        "position": {
+          "x": 1400,
+          "y": 400
+        },
+        "x": 1400,
+        "y": 400
+      },
+      {
+        "id": "notify",
+        "type": "NotificationService",
+        "config": {
+          "name": "Notification Service",
+          "capacity": 10000,
+          "base_latency": 15,
+          "description": "Delivers reminders via email/SMS. Circuit breaker enabled."
+        },
+        "position": {
+          "x": 1400,
+          "y": 120
+        },
+        "x": 1400,
+        "y": 120
+      },
+      {
+        "id": "monitor",
+        "type": "NotificationService",
+        "config": {
+          "name": "Monitoring/Logging",
+          "capacity": 8000,
+          "base_latency": 10,
+          "description": "Sends alerts and logs when SLAs degrade."
+        },
+        "position": {
+          "x": 1600,
+          "y": 60
+        },
+        "x": 1600,
+        "y": 60
+      },
+      {
+        "id": "db-primary",
+        "type": "Database",
+        "config": {
+          "name": "Primary DB",
+          "capacity": 14000,
+          "base_latency": 60,
+          "description": "Primary write store for catalog."
+        },
+        "position": {
+          "x": 1440,
+          "y": 200
+        },
+        "x": 1440,
+        "y": 200
+      },
+      {
+        "id": "db-replica",
+        "type": "Database",
+        "config": {
+          "name": "Read Replica",
+          "capacity": 16000,
+          "base_latency": 55,
+          "description": "Replica to offload read traffic."
+        },
+        "position": {
+          "x": 1440,
+          "y": 340
+        },
+        "x": 1440,
+        "y": 340
+      }
+    ],
+    "edges": [
+      {
+        "source": "user",
+        "target": "edge"
+      },
+      {
+        "source": "edge",
+        "target": "api"
+      },
+      {
+        "source": "api",
+        "target": "rate"
+      },
+      {
+        "source": "rate",
+        "target": "lb"
+      },
+      {
+        "source": "lb",
+        "target": "app-a"
+      },
+      {
+        "source": "lb",
+        "target": "app-b"
+      },
+      {
+        "source": "app-a",
+        "target": "cache"
+      },
+      {
+        "source": "app-b",
+        "target": "cache"
+      },
+      {
+        "source": "app-a",
+        "target": "queue_index_s5"
+      },
+      {
+        "source": "app-b",
+        "target": "queue_index_s5"
+      },
+      {
+        "source": "queue_index_s5",
+        "target": "worker_index_s5"
+      },
+      {
+        "source": "worker_index_s5",
+        "target": "search"
+      },
+      {
+        "source": "cache",
+        "target": "db-primary"
+      },
+      {
+        "source": "cache",
+        "target": "db-replica"
+      },
+      {
+        "source": "search",
+        "target": "db-primary"
+      },
+      {
+        "source": "search",
+        "target": "db-replica"
+      },
+      {
+        "source": "app-a",
+        "target": "queue"
+      },
+      {
+        "source": "app-b",
+        "target": "queue"
+      },
+      {
+        "source": "queue",
+        "target": "worker"
+      },
+      {
+        "source": "worker",
+        "target": "notify"
+      },
+      {
+        "source": "worker",
+        "target": "db-primary"
+      },
+      {
+        "source": "worker",
+        "target": "monitor"
+      },
+      {
+        "source": "app-a",
+        "target": "monitor"
+      },
+      {
+        "source": "app-b",
+        "target": "monitor"
+      }
+    ]
+  }
+}

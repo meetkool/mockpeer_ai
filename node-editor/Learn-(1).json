@@ -1,0 +1,20 @@
+{
+  "meta": { "mode": "practice", "preset": "enterprise_vms" },
+  "graph": {
+    "nodes": [
+      { "id": "user", "type": "User", "config": { "number_of_users": 10000 } },
+      { "id": "gateway", "type": "APIGateway", "config": { "name": "Managed Gateway", "base_latency": 15 } },
+      { "id": "logic", "type": "Server", "config": { "name": "Serverless Logic", "description": "Auto-scaling functions" } },
+      { "id": "queue", "type": "Queue", "config": { "name": "Approval Queue", "description": "Handles vendor onboarding workflows" } },
+      { "id": "db", "type": "Database", "config": { "name": "On-Demand DB", "base_latency": 40 } },
+      { "id": "blob", "type": "MediaStore", "config": { "name": "Contract Store", "description": "Cheap PDF/Doc storage" } }
+    ],
+    "edges": [
+      { "source": "user", "target": "gateway" },
+      { "source": "gateway", "target": "logic" },
+      { "source": "logic", "target": "queue" },
+      { "source": "logic", "target": "db" },
+      { "source": "logic", "target": "blob" }
+    ]
+  }
+}

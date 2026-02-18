@@ -1,0 +1,329 @@
+{
+  "meta": {
+    "mode": "learn",
+    "preset": "url_shortener",
+    "stage": "8"
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "user",
+        "type": "User",
+        "config": {
+          "name": "User",
+          "number_of_users": 100,
+          "requests_per_user": 1,
+          "x": 0,
+          "y": 240,
+          "description": "Creators and visitors shortening or expanding URLs."
+        },
+        "position": {
+          "x": 0,
+          "y": 240
+        },
+        "x": 0,
+        "y": 240
+      },
+      {
+        "id": "cdn",
+        "type": "CDN",
+        "config": {
+          "name": "CDN",
+          "capacity": 40000,
+          "base_latency": 5,
+          "x": 160,
+          "y": 240,
+          "description": "Caches redirects close to users for low latency."
+        },
+        "position": {
+          "x": 160,
+          "y": 240
+        },
+        "x": 160,
+        "y": 240
+      },
+      {
+        "id": "edge",
+        "type": "Edge",
+        "config": {
+          "name": "Edge Gateway",
+          "capacity": 9000,
+          "base_latency": 4,
+          "x": 300,
+          "y": 240,
+          "description": "Edge ingress, DDoS protection, TLS termination, and WAF."
+        },
+        "position": {
+          "x": 300,
+          "y": 240
+        },
+        "x": 300,
+        "y": 240
+      },
+      {
+        "id": "api",
+        "type": "APIGateway",
+        "config": {
+          "name": "API Gateway",
+          "capacity": 18000,
+          "base_latency": 10,
+          "x": 450,
+          "y": 240,
+          "description": "Entry point that authenticates and routes requests."
+        },
+        "position": {
+          "x": 450,
+          "y": 240
+        },
+        "x": 450,
+        "y": 240
+      },
+      {
+        "id": "rate",
+        "type": "RateLimiter",
+        "config": {
+          "name": "Rate Limiter",
+          "capacity": 30000,
+          "base_latency": 3,
+          "x": 600,
+          "y": 240,
+          "description": "Protects the service from abusive spikes."
+        },
+        "position": {
+          "x": 600,
+          "y": 240
+        },
+        "x": 600,
+        "y": 240
+      },
+      {
+        "id": "lb",
+        "type": "LoadBalancer",
+        "config": {
+          "name": "Load Balancer",
+          "capacity": 28000,
+          "base_latency": 8,
+          "x": 720,
+          "y": 240,
+          "description": "Distributes traffic across URL services."
+        },
+        "position": {
+          "x": 720,
+          "y": 240
+        },
+        "x": 720,
+        "y": 240
+      },
+      {
+        "id": "app-1",
+        "type": "Server",
+        "config": {
+          "name": "App Server A",
+          "capacity": 22000,
+          "base_latency": 18,
+          "x": 880,
+          "y": 180,
+          "description": "Handles URL creation and redirect lookups."
+        },
+        "position": {
+          "x": 880,
+          "y": 180
+        },
+        "x": 880,
+        "y": 180
+      },
+      {
+        "id": "app-2",
+        "type": "Server",
+        "config": {
+          "name": "App Server B",
+          "capacity": 22000,
+          "base_latency": 18,
+          "x": 880,
+          "y": 300,
+          "description": "Secondary URL service for scale-out."
+        },
+        "position": {
+          "x": 880,
+          "y": 300
+        },
+        "x": 880,
+        "y": 300
+      },
+      {
+        "id": "db",
+        "type": "Database",
+        "config": {
+          "name": "Primary DB",
+          "capacity": 16000,
+          "base_latency": 80,
+          "x": 1002,
+          "y": 443,
+          "description": "Stores short code mappings and metadata."
+        },
+        "position": {
+          "x": 1002,
+          "y": 443
+        },
+        "x": 1002,
+        "y": 443
+      },
+      {
+        "id": "id-gen",
+        "type": "IDGenerator",
+        "config": {
+          "name": "ID Generator",
+          "capacity": 20000,
+          "base_latency": 12,
+          "x": 1120,
+          "y": 80,
+          "description": "Issues unique short codes for new URLs."
+        },
+        "position": {
+          "x": 1120,
+          "y": 80
+        },
+        "x": 1120,
+        "y": 80
+      },
+      {
+        "id": "cache",
+        "type": "Cache",
+        "config": {
+          "name": "Redis Cache",
+          "capacity": 32000,
+          "base_latency": 5,
+          "x": 1120,
+          "y": 240,
+          "description": "Caches hot redirect mappings."
+        },
+        "position": {
+          "x": 1120,
+          "y": 240
+        },
+        "x": 1120,
+        "y": 240
+      },
+      {
+        "id": "db-primary",
+        "type": "Database",
+        "config": {
+          "name": "Primary DB",
+          "capacity": 18000,
+          "base_latency": 80,
+          "x": 1280,
+          "y": 160,
+          "description": "Primary store for short code mappings."
+        },
+        "position": {
+          "x": 1280,
+          "y": 160
+        },
+        "x": 1280,
+        "y": 160
+      },
+      {
+        "id": "db-replica-1",
+        "type": "Database",
+        "config": {
+          "name": "Read Replica A",
+          "capacity": 20000,
+          "base_latency": 70,
+          "x": 1280,
+          "y": 260,
+          "description": "Read replica for redirect lookups."
+        },
+        "position": {
+          "x": 1280,
+          "y": 260
+        },
+        "x": 1280,
+        "y": 260
+      },
+      {
+        "id": "db-replica-2",
+        "type": "Database",
+        "config": {
+          "name": "Read Replica B",
+          "capacity": 20000,
+          "base_latency": 70,
+          "x": 1280,
+          "y": 360,
+          "description": "Read replica for redirect lookups."
+        },
+        "position": {
+          "x": 1280,
+          "y": 360
+        },
+        "x": 1280,
+        "y": 360
+      }
+    ],
+    "edges": [
+      {
+        "source": "user",
+        "target": "cdn"
+      },
+      {
+        "source": "cdn",
+        "target": "edge"
+      },
+      {
+        "source": "edge",
+        "target": "api"
+      },
+      {
+        "source": "api",
+        "target": "rate"
+      },
+      {
+        "source": "rate",
+        "target": "lb"
+      },
+      {
+        "source": "lb",
+        "target": "app-1"
+      },
+      {
+        "source": "lb",
+        "target": "app-2"
+      },
+      {
+        "source": "app-1",
+        "target": "id-gen"
+      },
+      {
+        "source": "app-2",
+        "target": "id-gen"
+      },
+      {
+        "source": "app-1",
+        "target": "cache"
+      },
+      {
+        "source": "app-2",
+        "target": "cache"
+      },
+      {
+        "source": "cache",
+        "target": "db-primary"
+      },
+      {
+        "source": "cache",
+        "target": "db-replica-1"
+      },
+      {
+        "source": "cache",
+        "target": "db-replica-2"
+      },
+      {
+        "source": "app-2",
+        "target": "db"
+      },
+      {
+        "source": "app-1",
+        "target": "db"
+      }
+    ]
+  }
+}

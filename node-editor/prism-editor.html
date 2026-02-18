@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PRISM Pro - Custom Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0f172a; overflow: hidden; user-select: none; font-family: 'Inter', sans-serif; margin: 0; }
+        
+        #viewport { width: 100vw; height: 100vh; overflow: hidden; position: relative; background: #0f172a; cursor: grab; }
+        #viewport:active { cursor: grabbing; }
+
+        #world { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
+
+        #grid { position: absolute; inset: -400%; width: 900%; height: 900%; pointer-events: none; opacity: 0.3; background: radial-gradient(#1e293b 1px, transparent 1px); background-size: 20px 20px; }
+
+        /* KEY FIX: SVG must live OUTSIDE #world so its coordinate space == screen space.
+           We handle coordinate conversion manually in JS. */
+        #cables-layer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            overflow: visible;
+        }
+
+        .node { position: absolute; width: 160px; background: #1e293b; border: 1px solid #334155; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); color: white; z-index: 10; cursor: grab; transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s; }
+        .node:active { cursor: grabbing; border-color: #38bdf8; }
+        
+        .node-header { padding: 12px; border-bottom: 1px solid #334155; font-weight: bold; font-size: 12px; display: flex; align-items: center; gap: 8px; }
+        .node-body { padding: 10px; font-size: 10px; color: #94a3b8; }
+
+        .port { position: absolute; width: 12px; height: 12px; background: #475569; border: 2px solid #0f172a; border-radius: 50%; cursor: crosshair; transition: all 0.2s; z-index: 20; }
+        .port:hover { background: #38bdf8; transform: scale(1.4) !important; box-shadow: 0 0 10px #38bdf8; }
+        .port.top    { top: -6px;    left: 50%;  transform: translateX(-50%); }
+        .port.bottom { bottom: -6px; left: 50%;  transform: translateX(-50%); }
+        .port.left   { left: -6px;   top: 50%;   transform: translateY(-50%); }
+        .port.right  { right: -6px;  top: 50%;   transform: translateY(-50%); }
+
+        path { fill: none; stroke: #64748b; stroke-width: 2; stroke-linecap: round; }
+        path.active-drag { stroke: #38bdf8; stroke-dasharray: 5; animation: dash 0.8s linear infinite; }
+        #drag-line { pointer-events: none !important; }
+        @keyframes dash { to { stroke-dashoffset: -10; } }
+
+        .node.hover-target {
+            box-shadow: 0 0 25px #38bdf8aa;
+            border-color: #38bdf8;
+            transform: scale(1.03);
+            z-index: 50;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="fixed top-4 left-4 z-50 bg-slate-900/90 p-4 rounded-xl border border-slate-700 shadow-2xl backdrop-blur-md w-72 max-h-[90vh] overflow-y-auto">
+        <h1 class="text-sky-400 font-black text-xl mb-1">PRISM ENGINE</h1>
+        <p class="text-[10px] text-slate-500 font-bold uppercase mb-3">Zoom & Pan + Fixed Connections</p>
+        
+        <div class="grid grid-cols-2 gap-2 mb-3">
+            <button onclick="createNode('User', 'User', '#0ea5e9')" class="bg-slate-800 hover:bg-sky-600 text-white text-xs py-2 rounded font-bold transition">+ USER</button>
+            <button onclick="createNode('Server', 'API Gateway', '#6366f1')" class="bg-slate-800 hover:bg-indigo-600 text-white text-xs py-2 rounded font-bold transition">+ SERVER</button>
+            <button onclick="createNode('Database', 'Primary DB', '#f97316')" class="bg-slate-800 hover:bg-orange-600 text-white text-xs py-2 rounded font-bold transition">+ DATABASE</button>
+            <button onclick="createNode('Cache', 'Redis Cache', '#22c55e')" class="bg-slate-800 hover:bg-green-600 text-white text-xs py-2 rounded font-bold transition">+ CACHE</button>
+        </div>
+        
+        <div class="mb-3">
+            <p class="text-[9px] text-slate-400 font-bold uppercase mb-1">Ingress & Security</p>
+            <div class="grid grid-cols-2 gap-1">
+                <button onclick="createNode('User', 'User-1', '#0ea5e9', '100 users', null)" class="bg-slate-800 hover:bg-sky-600 text-white text-[10px] py-1 px-2 rounded font-bold transition">User-1</button>
+                <button onclick="createNode('LoadBalancer', 'LoadBalancer-2', '#a855f7', 800, '20ms')" class="bg-slate-800 hover:bg-purple-600 text-white text-[10px] py-1 px-2 rounded font-bold transition">LoadBalancer-2</button>
+                <button onclick="createNode('Security', 'RateLimiter-3', '#ef4444', 1000, '8ms')" class="bg-slate-800 hover:bg-red-600 text-white text-[10px] py-1 px-2 rounded font-bold transition">RateLimiter-3</button>
+                <button onclick="createNode('CDN', 'CDN-4', '#14b8a6', 5000, '4ms')" class="bg-slate-800 hover:bg-teal-600 text-white text-[10px] py-1 px-2 rounded font-bold transition">CDN-4</button>
+                <button onclick="createNode('Edge', 'Edge-12', '#334155', 4000, '6ms')" class="bg-slate-800 hover:bg-slate-600 text-white text-[10px] py-1 px-2 rounded font-bold transition">Edge-12</button>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <p class="text-[9px] text-slate-400 font-bold uppercase mb-1">Logic & Compute</p>
+            <div class="grid grid-cols-2 gap-1">
+                <button onclick="createNode('Server', 'Server-7', '#6366f1', 500, '50ms')" class="bg-slate-800 hover:bg-indigo-600 text-white text-[10px] py-1 px-2 rounded font-bold transition">Server-7</button>
+                <button onclick="createNode('Generator', 'IDGenerator-5', '#8b5cf6', 2000, '12ms')" class="bg-slate-800 hover:bg-violet-600 text-white text-[10px] py-1 px-2 rounded font-bold transition">IDGenerator-5</button>
+                <button onclick="createNode('Worker', 'Worker-11', '#ec4899', 800, '25ms')" class="bg-slate-800 hover:bg-pink-600 text-white text-[10px] py-1 px-2 rounded font-bold transition">Worker-11</button>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <p class="text-[9px] text-slate-400 font-bold uppercase mb-1">Data & Storage</p>
+            <div class="grid grid-cols-2 gap-1">
+                <button onclick="createNode('Database', 'Database-8', '#f97316', 300, '80ms')" class="bg-slate-800 hover:bg-orange-600 text-white text-[10px] py-1 px-2 rounded font-bold transition">Database-8</button>
+                <button onclick="createNode('Cache', 'Cache-9', '#22c55e', 1200, '5ms')" class="bg-slate-800 hover:bg-green-600 text-white text-[10px] py-1 px-2 rounded font-bold transition">Cache-9</button>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <p class="text-[9px] text-slate-400 font-bold uppercase mb-1">Messaging</p>
+            <div class="grid grid-cols-2 gap-1">
+                <button onclick="createNode('Queue', 'Queue-6', '#f59e0b', 600, '30ms')" class="bg-slate-800 hover:bg-amber-600 text-white text-[10px] py-1 px-2 rounded font-bold transition">Queue-6</button>
+                <button onclick="createNode('Queue', 'Queue-10', '#f59e0b', 600, '30ms')" class="bg-slate-800 hover:bg-amber-600 text-white text-[10px] py-1 px-2 rounded font-bold transition">Queue-10</button>
+            </div>
+        </div>
+        
+        <div class="mt-3 pt-3 border-t border-slate-700">
+            <button onclick="exportJSON()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2 rounded font-bold transition">SAVE TO FILE</button>
+        </div>
+        
+        <p class="text-[9px] text-slate-500 mt-3 leading-relaxed">
+            <strong>Ctrl + Scroll</strong> = Zoom<br>
+            <strong>Drag Empty Space</strong> = Pan<br>
+            <strong>Click & Drag Blue Dots</strong> = Connect Nodes
+        </p>
+    </div>
+
+    <!-- SVG is OUTSIDE #world so it always uses screen coords — no transform confusion -->
+    <svg id="cables-layer">
+        <path id="drag-line" class="active-drag" d="" style="display:none;" stroke="#38bdf8" stroke-width="2.5" fill="none"></path>
+    </svg>
+
+    <div id="viewport">
+        <div id="world">
+            <div id="grid"></div>
+            <div id="node-layer"></div>
+        </div>
+    </div>
+
+    <script>
+        // ─── SETUP ───────────────────────────────────────────────────────────
+        const viewport   = document.getElementById('viewport');
+        const world      = document.getElementById('world');
+        const nodeLayer  = document.getElementById('node-layer');
+        const cablesLayer = document.getElementById('cables-layer');
+        const dragLine   = document.getElementById('drag-line');
+
+        let nodes       = [];
+        let connections = [];
+
+        // View state
+        let view = { scale: 1, x: 0, y: 0 };
+
+        // Panning
+        let isPanning  = false;
+        let panStart   = { x: 0, y: 0 };
+
+        // Node dragging
+        let draggingNode = null;
+        let dragOffset   = { x: 0, y: 0 };
+
+        // Cable drawing — stores SCREEN coords (SVG is fixed, no transform)
+        let drawingCable = null; // { startNodeId, startPort, startX, startY }
+
+        // ─── COORDINATE HELPERS ──────────────────────────────────────────────
+        // Convert screen → world (for node positioning)
+        function screenToWorld(sx, sy) {
+            return {
+                x: (sx - view.x) / view.scale,
+                y: (sy - view.y) / view.scale
+            };
+        }
+
+        // Apply current transform to #world
+        function applyTransform() {
+            world.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.scale})`;
+        }
+
+        // ─── PORT SCREEN POSITION ────────────────────────────────────────────
+        // Since SVG is fixed/screen-space, we just use getBoundingClientRect directly.
+        function getPortScreenPos(nodeId, portType) {
+            const nodeEl = document.getElementById(nodeId);
+            const portEl = nodeEl.querySelector(`.port.${portType}`);
+            const r = portEl.getBoundingClientRect();
+            return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        }
+
+        // ─── BEZIER PATH ─────────────────────────────────────────────────────
+        function getBezierPath(x1, y1, x2, y2) {
+            const cx = x1 + (x2 - x1) * 0.5;
+            return `M ${x1} ${y1} C ${cx} ${y1}, ${cx} ${y2}, ${x2} ${y2}`;
+        }
+
+        // ─── NODE CREATION ───────────────────────────────────────────────────
+        function createNode(type, title, color, capacity, latency) {
+            const id     = 'node-' + Math.random().toString(36).substr(2, 6);
+            const center = screenToWorld(viewport.clientWidth / 2, viewport.clientHeight / 2);
+            const x      = center.x + (Math.random() - 0.5) * 120;
+            const y      = center.y + (Math.random() - 0.5) * 120;
+
+            const el = document.createElement('div');
+            el.className = 'node';
+            el.id        = id;
+            el.style.left = x + 'px';
+            el.style.top  = y + 'px';
+
+            const statsHTML = (capacity || latency)
+                ? `<div style="margin-top:6px;padding-top:6px;border-top:1px solid #334155;font-size:9px;">
+                       ${capacity ? `<div>📊 Cap: ${capacity}</div>` : ''}
+                       ${latency  ? `<div>⏱️ ${latency}</div>`       : ''}
+                   </div>`
+                : '';
+
+            el.innerHTML = `
+                <div class="node-header" style="color:${color}">
+                    <div style="width:8px;height:8px;background:${color};border-radius:50%"></div>
+                    ${title}
+                </div>
+                <div class="node-body">Type: ${type}<br>ID: ${id}</div>
+                ${statsHTML}
+                <div class="port top"    data-port="top"></div>
+                <div class="port bottom" data-port="bottom"></div>
+                <div class="port left"   data-port="left"></div>
+                <div class="port right"  data-port="right"></div>`;
+
+            attachNodeEvents(el);
+            nodeLayer.appendChild(el);
+            nodes.push({ id, el, x, y, type, title, color, capacity, latency });
+        }
+
+        // ─── NODE EVENTS (The Fixed Connection System) ───────────────────────
+        function attachNodeEvents(el) {
+
+            // 1. Drag node to move it
+            el.addEventListener('mousedown', (e) => {
+                if (e.target.classList.contains('port')) return; // ports handle their own events
+                draggingNode = el;
+                const rect = el.getBoundingClientRect();
+                dragOffset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+                el.style.zIndex = 100;
+                e.stopPropagation();
+            });
+
+            // 2. Start drawing a cable from a port
+            el.querySelectorAll('.port').forEach(port => {
+                port.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    const r = port.getBoundingClientRect();
+                    const sx = r.left + r.width / 2;
+                    const sy = r.top  + r.height / 2;
+
+                    drawingCable = {
+                        startNodeId: el.id,
+                        startPort:   port.dataset.port,
+                        startX: sx,
+                        startY: sy
+                    };
+
+                    dragLine.setAttribute('d', `M ${sx} ${sy} L ${sx} ${sy}`);
+                    dragLine.style.display = 'block';
+                });
+            });
+
+            // 3. Glow when a wire hovers over this node
+            el.addEventListener('mouseenter', () => {
+                if (drawingCable && drawingCable.startNodeId !== el.id) {
+                    el.classList.add('hover-target');
+                }
+            });
+
+            el.addEventListener('mouseleave', () => {
+                el.classList.remove('hover-target');
+            });
+
+            // 4. Smart-snap connect on drop (anywhere on the node)
+            el.addEventListener('mouseup', (e) => {
+                if (drawingCable && drawingCable.startNodeId !== el.id) {
+                    e.stopPropagation();
+                    el.classList.remove('hover-target');
+
+                    const bestPort = getClosestPort(el, e.clientX, e.clientY);
+                    createConnection(drawingCable.startNodeId, drawingCable.startPort, el.id, bestPort);
+                    endCableDrag();
+                }
+            });
+        }
+
+        // ─── SMART PORT SNAP ─────────────────────────────────────────────────
+        function getClosestPort(nodeEl, mouseX, mouseY) {
+            let minDist = Infinity;
+            let best    = 'top';
+            nodeEl.querySelectorAll('.port').forEach(port => {
+                const r    = port.getBoundingClientRect();
+                const px   = r.left + r.width / 2;
+                const py   = r.top  + r.height / 2;
+                const dist = Math.hypot(px - mouseX, py - mouseY);
+                if (dist < minDist) { minDist = dist; best = port.dataset.port; }
+            });
+            return best;
+        }
+
+        // ─── CONNECTIONS ─────────────────────────────────────────────────────
+        function createConnection(fromNodeId, fromPort, toNodeId, toPort) {
+            if (fromNodeId === toNodeId) return;
+            const id = `${fromNodeId}_${fromPort}__${toNodeId}_${toPort}`;
+            if (document.getElementById(id)) return; // no duplicates
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.id = id;
+            path.setAttribute('stroke', '#94a3b8');
+            path.setAttribute('stroke-width', '2');
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke-linecap', 'round');
+
+            // Insert before drag-line so it sits below
+            cablesLayer.insertBefore(path, dragLine);
+
+            const conn = { id, el: path, from: { n: fromNodeId, p: fromPort }, to: { n: toNodeId, p: toPort } };
+            connections.push(conn);
+            renderConnection(conn);
+        }
+
+        function renderConnection(conn) {
+            const start = getPortScreenPos(conn.from.n, conn.from.p);
+            const end   = getPortScreenPos(conn.to.n,   conn.to.p);
+            conn.el.setAttribute('d', getBezierPath(start.x, start.y, end.x, end.y));
+        }
+
+        function updateAllConnections() {
+            connections.forEach(renderConnection);
+        }
+
+        function endCableDrag() {
+            drawingCable = null;
+            dragLine.style.display = 'none';
+            dragLine.setAttribute('d', '');
+        }
+
+        // ─── GLOBAL MOUSE EVENTS ─────────────────────────────────────────────
+        window.addEventListener('mousemove', (e) => {
+            // Pan
+            if (isPanning) {
+                view.x = e.clientX - panStart.x;
+                view.y = e.clientY - panStart.y;
+                applyTransform();
+                updateAllConnections();
+                return;
+            }
+
+            // Drag node
+            if (draggingNode) {
+                // Convert screen drop position back to world coords for CSS positioning
+                const worldPos = screenToWorld(e.clientX - dragOffset.x, e.clientY - dragOffset.y);
+                // But we need the element's top-left in world space:
+                // e.clientX - dragOffset.x is the screen left of the node
+                // world left = (screenLeft - view.x) / view.scale
+                const wx = (e.clientX - dragOffset.x - view.x) / view.scale;
+                const wy = (e.clientY - dragOffset.y - view.y) / view.scale;
+                draggingNode.style.left = wx + 'px';
+                draggingNode.style.top  = wy + 'px';
+                const n = nodes.find(n => n.id === draggingNode.id);
+                if (n) { n.x = wx; n.y = wy; }
+                updateAllConnections();
+            }
+
+            // Update live cable line (screen coords, SVG is fixed)
+            if (drawingCable) {
+                const d = getBezierPath(drawingCable.startX, drawingCable.startY, e.clientX, e.clientY);
+                dragLine.setAttribute('d', d);
+            }
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            if (isPanning) {
+                isPanning = false;
+                viewport.style.cursor = 'grab';
+                return;
+            }
+            if (draggingNode) {
+                draggingNode.style.zIndex = '';
+                draggingNode = null;
+            }
+            if (drawingCable) {
+                // Released on empty space — cancel
+                endCableDrag();
+            }
+        });
+
+        // ─── ZOOM & PAN ──────────────────────────────────────────────────────
+        viewport.addEventListener('mousedown', (e) => {
+            // Only pan if clicking on background (not a node or port)
+            if (e.target === viewport || e.target === world || e.target.id === 'grid') {
+                isPanning = true;
+                panStart  = { x: e.clientX - view.x, y: e.clientY - view.y };
+                viewport.style.cursor = 'grabbing';
+            }
+        });
+
+        viewport.addEventListener('wheel', (e) => {
+            if (!e.ctrlKey) return;
+            e.preventDefault();
+
+            const factor   = Math.exp(e.deltaY * -0.001);
+            const newScale = Math.min(Math.max(0.1, view.scale * factor), 4);
+
+            // Zoom toward mouse position
+            view.x -= (e.clientX - view.x) * (factor - 1);
+            view.y -= (e.clientY - view.y) * (factor - 1);
+            view.scale = newScale;
+
+            applyTransform();
+            updateAllConnections();
+        }, { passive: false });
+
+        // ─── EXPORT ──────────────────────────────────────────────────────────
+        function exportJSON() {
+            const data = {
+                graph: {
+                    nodes: nodes.map(n => ({
+                        id: n.id, type: n.type,
+                        config: { name: n.title, capacity: n.capacity, latency: n.latency },
+                        position: { x: n.x, y: n.y }
+                    })),
+                    edges: connections.map(c => ({
+                        source: c.from.n, target: c.to.n,
+                        sourcePort: c.from.p, targetPort: c.to.p
+                    }))
+                }
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const a = Object.assign(document.createElement('a'), {
+                href: URL.createObjectURL(blob),
+                download: 'prism-export-' + new Date().toISOString().split('T')[0] + '.json'
+            });
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // ─── INIT ────────────────────────────────────────────────────────────
+        createNode('User',     '10k Enterprise Users', '#0ea5e9');
+        setTimeout(() => createNode('Edge',     'Managed Gateway',  '#334155'), 80);
+        setTimeout(() => createNode('Server',   'FastAPI VMS Core', '#6366f1'), 160);
+        setTimeout(() => createNode('Database', 'Vendor Master DB', '#f97316'), 240);
+        setTimeout(() => createNode('Server',   'Payment Gateway',  '#6366f1'), 320);
+    </script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+{
+  "meta": {
+    "mode": "practice",
+    "preset": "enterprise_vms",
+    "stage": null
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "User-1",
+        "type": "User",
+        "config": {
+          "name": "User",
+          "number_of_users": 100,
+          "requests_per_user": 1,
+          "description": ""
+        },
+        "position": {
+          "x": 128,
+          "y": 216.03125
+        },
+        "x": 128,
+        "y": 216.03125
+      },
+      {
+        "id": "LoadBalancer-2",
+        "type": "LoadBalancer",
+        "config": {
+          "name": "Load Balancer",
+          "capacity": 800,
+          "base_latency": 20,
+          "description": ""
+        },
+        "position": {
+          "x": 210,
+          "y": 145.03125
+        },
+        "x": 210,
+        "y": 145.03125
+      },
+      {
+        "id": "RateLimiter-3",
+        "type": "RateLimiter",
+        "config": {
+          "name": "Rate Limiter",
+          "capacity": 1000,
+          "base_latency": 8,
+          "description": ""
+        },
+        "position": {
+          "x": 483,
+          "y": 145.03125
+        },
+        "x": 483,
+        "y": 145.03125
+      },
+      {
+        "id": "CDN-4",
+        "type": "CDN",
+        "config": {
+          "name": "CDN",
+          "capacity": 5000,
+          "base_latency": 4,
+          "description": ""
+        },
+        "position": {
+          "x": 353,
+          "y": 349.03125
+        },
+        "x": 353,
+        "y": 349.03125
+      },
+      {
+        "id": "IDGenerator-5",
+        "type": "IDGenerator",
+        "config": {
+          "name": "ID Generator",
+          "capacity": 2000,
+          "base_latency": 12,
+          "description": ""
+        },
+        "position": {
+          "x": 127,
+          "y": 463.03125
+        },
+        "x": 127,
+        "y": 463.03125
+      },
+      {
+        "id": "Queue-6",
+        "type": "Queue",
+        "config": {
+          "name": "Message Queue",
+          "capacity": 600,
+          "base_latency": 30,
+          "description": ""
+        },
+        "position": {
+          "x": 117,
+          "y": 357.03125
+        },
+        "x": 117,
+        "y": 357.03125
+      },
+      {
+        "id": "Server-7",
+        "type": "Server",
+        "config": {
+          "name": "Server",
+          "capacity": 500,
+          "base_latency": 50,
+          "description": ""
+        },
+        "position": {
+          "x": 871,
+          "y": 333.03125
+        },
+        "x": 871,
+        "y": 333.03125
+      },
+      {
+        "id": "Database-8",
+        "type": "Database",
+        "config": {
+          "name": "Database",
+          "capacity": 300,
+          "base_latency": 80,
+          "description": ""
+        },
+        "position": {
+          "x": 666,
+          "y": 346.03125
+        },
+        "x": 666,
+        "y": 346.03125
+      },
+      {
+        "id": "Cache-9",
+        "type": "Cache",
+        "config": {
+          "name": "Cache",
+          "capacity": 1200,
+          "base_latency": 5,
+          "description": ""
+        },
+        "position": {
+          "x": 901,
+          "y": 178.03125
+        },
+        "x": 901,
+        "y": 178.03125
+      },
+      {
+        "id": "Queue-10",
+        "type": "Queue",
+        "config": {
+          "name": "Message Queue",
+          "capacity": 600,
+          "base_latency": 30,
+          "description": ""
+        },
+        "position": {
+          "x": 432,
+          "y": 252.03125
+        },
+        "x": 432,
+        "y": 252.03125
+      },
+      {
+        "id": "Worker-11",
+        "type": "Worker",
+        "config": {
+          "name": "Worker",
+          "capacity": 800,
+          "base_latency": 25,
+          "description": ""
+        },
+        "position": {
+          "x": 502,
+          "y": 609.03125
+        },
+        "x": 502,
+        "y": 609.03125
+      },
+      {
+        "id": "Edge-12",
+        "type": "Edge",
+        "config": {
+          "name": "Edge",
+          "capacity": 4000,
+          "base_latency": 6,
+          "description": ""
+        },
+        "position": {
+          "x": 841,
+          "y": 554.03125
+        },
+        "x": 841,
+        "y": 554.03125
+      }
+    ],
+    "edges": []
+  }
+}

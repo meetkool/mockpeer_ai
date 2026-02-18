@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PRISM Pro - High-Performance Architect</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0f172a; color: #f8fafc; height: 100vh; margin: 0; display: flex; overflow: hidden; font-family: 'Inter', sans-serif; }
+        #network-canvas { flex-grow: 1; height: 100%; background: #0b1222; cursor: crosshair; }
+        .sidebar { width: 320px; background: #0f172a; border-right: 1px solid #1e293b; display: flex; flex-direction: column; z-index: 10; shadow: 2xl; }
+        .vis-edit-mode { background: #1e293b !important; color: #10b981 !important; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar p-6 space-y-6">
+        <div>
+            <h1 class="text-2xl font-black text-sky-400 tracking-tighter">PRISM ULTRA</h1>
+            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">No-Lag System Modeler</p>
+        </div>
+
+        <div class="space-y-4">
+            <h3 class="text-xs font-bold text-slate-400 uppercase">Components</h3>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="addNode('User')" class="bg-slate-800 hover:bg-sky-600 p-3 rounded text-[10px] font-bold border border-slate-700 transition-all">ADD USER</button>
+                <button onclick="addNode('Server')" class="bg-slate-800 hover:bg-indigo-600 p-3 rounded text-[10px] font-bold border border-slate-700 transition-all">ADD SERVER</button>
+                <button onclick="addNode('Database')" class="bg-slate-800 hover:bg-orange-600 p-3 rounded text-[10px] font-bold border border-slate-700 transition-all">ADD DB</button>
+                <button onclick="addNode('LoadBalancer')" class="bg-slate-800 hover:bg-purple-600 p-3 rounded text-[10px] font-bold border border-slate-700 transition-all">ADD LB</button>
+            </div>
+            <button id="connectBtn" onclick="toggleConnectMode()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-lg text-xs font-black shadow-lg shadow-emerald-900/20 transition-all">
+                ENABLE CONNECT MODE
+            </button>
+        </div>
+
+        <div class="flex flex-col gap-2">
+            <label class="text-xs font-bold text-slate-400">Sync JSON Data</label>
+            <textarea id="jsonBox" 
+                class="bg-slate-950 border border-slate-700 rounded p-3 text-[10px] h-40 font-mono text-sky-400 focus:border-sky-500 outline-none"
+                placeholder="Paste system JSON here..."></textarea>
+            <button onclick="importSystem()" class="bg-slate-700 hover:bg-slate-600 py-2 rounded text-[10px] font-bold">LOAD FROM JSON</button>
+        </div>
+
+        <div class="mt-auto p-4 bg-slate-900/50 rounded-lg border border-slate-800">
+            <p class="text-[10px] text-slate-500 italic">"Lag-free rendering powered by Vis-Network Physics Engine."</p>
+        </div>
+    </div>
+
+    <div id="network-canvas"></div>
+
+    <script type="text/javascript">
+        let nodes = new vis.DataSet([]);
+        let edges = new vis.DataSet([]);
+        let network = null;
+        let isConnectMode = false;
+
+        const container = document.getElementById('network-canvas');
+        
+        const options = {
+            interaction: { hover: true, navigationButtons: true, keyboard: true },
+            manipulation: {
+                enabled: false,
+                addEdge: function (data, callback) {
+                    data.arrows = 'to';
+                    callback(data);
+                    toggleConnectMode(); // Auto-disable after connect
+                }
+            },
+            physics: {
+                enabled: true,
+                barnesHut: { gravitationalConstant: -3000, centralGravity: 0.3, springLength: 120 },
+                stabilization: { iterations: 100 }
+            },
+            nodes: {
+                shape: 'box',
+                margin: 12,
+                font: { color: '#ffffff', size: 13, face: 'monospace' },
+                borderWidth: 2,
+                shadow: { enabled: true, color: 'rgba(0,0,0,0.5)' }
+            },
+            edges: {
+                width: 2,
+                color: { color: '#475569', highlight: '#38bdf8' },
+                smooth: { type: 'continuous' }
+            }
+        };
+
+        function init() {
+            network = new vis.Network(container, { nodes, edges }, options);
+        }
+
+        function addNode(type) {
+            const id = type + "-" + Math.floor(Math.random() * 1000);
+            nodes.add({
+                id: id,
+                label: id,
+                color: getColor(type),
+                shape: type === 'Database' ? 'database' : 'box'
+            });
+        }
+
+        function toggleConnectMode() {
+            isConnectMode = !isConnectMode;
+            const btn = document.getElementById('connectBtn');
+            if (isConnectMode) {
+                network.addEdgeMode();
+                btn.innerHTML = "EXIT CONNECT MODE";
+                btn.className = "w-full bg-red-600 hover:bg-red-500 py-3 rounded-lg text-xs font-black transition-all";
+            } else {
+                network.disableEditMode();
+                btn.innerHTML = "ENABLE CONNECT MODE";
+                btn.className = "w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-lg text-xs font-black transition-all";
+            }
+        }
+
+        function getColor(type) {
+            const map = { 'User': '#0ea5e9', 'Server': '#6366f1', 'Database': '#f97316', 'LoadBalancer': '#a855f7' };
+            return map[type] || '#64748b';
+        }
+
+        function importSystem() {
+            try {
+                const data = JSON.parse(document.getElementById('jsonBox').value);
+                nodes.clear();
+                edges.clear();
+                data.graph.nodes.forEach(n => {
+                    nodes.add({ id: n.id, label: n.config.name || n.id, color: getColor(n.type), shape: n.type === 'Database' ? 'database' : 'box' });
+                });
+                data.graph.edges.forEach(e => {
+                    edges.add({ from: e.source, to: e.target, arrows: 'to' });
+                });
+            } catch (e) { alert("Invalid JSON format!"); }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
