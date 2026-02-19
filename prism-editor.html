@@ -21,7 +21,7 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             pointer-events: none;
-            z-index: 5;
+            z-index: 40;
             overflow: visible;
         }
 
@@ -38,8 +38,20 @@
         .port.left   { left: -6px;   top: 50%;   transform: translateY(-50%); }
         .port.right  { right: -6px;  top: 50%;   transform: translateY(-50%); }
 
-        path { fill: none; stroke: #64748b; stroke-width: 2; stroke-linecap: round; }
-        path.active-drag { stroke: #38bdf8; stroke-dasharray: 5; animation: dash 0.8s linear infinite; }
+        path { fill: none; stroke: #94a3b8; stroke-width: 2.5; stroke-linecap: round; }
+        path.connection {
+            stroke: #cbd5e1;
+            stroke-width: 2.6;
+            filter: drop-shadow(0 0 6px rgba(148, 163, 184, 0.35));
+            opacity: 0.96;
+        }
+        path.active-drag {
+            stroke: #38bdf8;
+            stroke-width: 2.8;
+            stroke-dasharray: 5;
+            animation: dash 0.8s linear infinite;
+            marker-end: url(#arrowhead-drag);
+        }
         #drag-line { pointer-events: none !important; }
         @keyframes dash { to { stroke-dashoffset: -10; } }
 
@@ -113,6 +125,14 @@
 
     <!-- SVG is OUTSIDE #world so it always uses screen coords — no transform confusion -->
     <svg id="cables-layer">
+        <defs>
+            <marker id="arrowhead" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="11" markerHeight="10" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 4 L 0 8 z" fill="#cbd5e1"></path>
+            </marker>
+            <marker id="arrowhead-drag" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="11" markerHeight="10" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 4 L 0 8 z" fill="#38bdf8"></path>
+            </marker>
+        </defs>
         <path id="drag-line" class="active-drag" d="" style="display:none;" stroke="#38bdf8" stroke-width="2.5" fill="none"></path>
     </svg>
 
@@ -293,10 +313,13 @@
 
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             path.id = id;
-            path.setAttribute('stroke', '#94a3b8');
-            path.setAttribute('stroke-width', '2');
+            path.classList.add('connection');
+            path.setAttribute('stroke', '#cbd5e1');
+            path.setAttribute('stroke-width', '2.6');
             path.setAttribute('fill', 'none');
             path.setAttribute('stroke-linecap', 'round');
+            path.setAttribute('marker-end', 'url(#arrowhead)');
+            path.style.strokeLinejoin = 'round';
 
             // Insert before drag-line so it sits below
             cablesLayer.insertBefore(path, dragLine);
