@@ -126,11 +126,11 @@
     <!-- SVG is OUTSIDE #world so it always uses screen coords — no transform confusion -->
     <svg id="cables-layer">
         <defs>
-            <marker id="arrowhead" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="11" markerHeight="10" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 4 L 0 8 z" fill="#cbd5e1"></path>
+            <marker id="arrowhead" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="14" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 4 L 0 8 z" fill="#e2e8f0" stroke="#334155" stroke-width="1"></path>
             </marker>
-            <marker id="arrowhead-drag" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="11" markerHeight="10" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 4 L 0 8 z" fill="#38bdf8"></path>
+            <marker id="arrowhead-drag" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="14" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 4 L 0 8 z" fill="#7dd3fc" stroke="#0c4a6e" stroke-width="1"></path>
             </marker>
         </defs>
         <path id="drag-line" class="active-drag" d="" style="display:none;" stroke="#38bdf8" stroke-width="2.5" fill="none"></path>
@@ -192,9 +192,32 @@
         }
 
         // ─── BEZIER PATH ─────────────────────────────────────────────────────
-        function getBezierPath(x1, y1, x2, y2) {
-            const cx = x1 + (x2 - x1) * 0.5;
-            return `M ${x1} ${y1} C ${cx} ${y1}, ${cx} ${y2}, ${x2} ${y2}`;
+        function getPortVector(port) {
+            if (port === 'top') return { x: 0, y: -1 };
+            if (port === 'bottom') return { x: 0, y: 1 };
+            if (port === 'left') return { x: -1, y: 0 };
+            return { x: 1, y: 0 }; // right/default
+        }
+
+        function inferPortByDirection(dx, dy) {
+            if (Math.abs(dx) > Math.abs(dy)) {
+                return dx >= 0 ? 'right' : 'left';
+            }
+            return dy >= 0 ? 'bottom' : 'top';
+        }
+
+        function getBezierPath(x1, y1, x2, y2, fromPort = 'right', toPort = 'left') {
+            const fromVec = getPortVector(fromPort);
+            const toVec = getPortVector(toPort);
+            const distance = Math.hypot(x2 - x1, y2 - y1);
+            const handle = Math.max(45, Math.min(150, distance * 0.45));
+
+            const c1x = x1 + fromVec.x * handle;
+            const c1y = y1 + fromVec.y * handle;
+            const c2x = x2 + toVec.x * handle;
+            const c2y = y2 + toVec.y * handle;
+
+            return `M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`;
         }
 
         // ─── NODE CREATION ───────────────────────────────────────────────────
@@ -332,7 +355,7 @@
         function renderConnection(conn) {
             const start = getPortScreenPos(conn.from.n, conn.from.p);
             const end   = getPortScreenPos(conn.to.n,   conn.to.p);
-            conn.el.setAttribute('d', getBezierPath(start.x, start.y, end.x, end.y));
+            conn.el.setAttribute('d', getBezierPath(start.x, start.y, end.x, end.y, conn.from.p, conn.to.p));
         }
 
         function updateAllConnections() {
@@ -374,7 +397,15 @@
 
             // Update live cable line (screen coords, SVG is fixed)
             if (drawingCable) {
-                const d = getBezierPath(drawingCable.startX, drawingCable.startY, e.clientX, e.clientY);
+                const dynamicToPort = inferPortByDirection(drawingCable.startX - e.clientX, drawingCable.startY - e.clientY);
+                const d = getBezierPath(
+                    drawingCable.startX,
+                    drawingCable.startY,
+                    e.clientX,
+                    e.clientY,
+                    drawingCable.startPort,
+                    dynamicToPort
+                );
                 dragLine.setAttribute('d', d);
             }
         });
