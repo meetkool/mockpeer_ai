@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PRISM Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/prism-engine/style.css">
+</head>
+<body>
+
+<div class="fixed top-4 left-4 z-50 w-60 rounded-2xl shadow-xl p-4"
+     style="background:rgba(255,255,255,0.95);border:1px solid #e2e8f0;">
+    <h1 class="font-black text-lg mb-0.5" style="color:#0f172a;">PRISM ENGINE</h1>
+    <p class="text-[9px] font-bold uppercase mb-3" style="color:#94a3b8;letter-spacing:.08em;">System Designer</p>
+
+    <div class="grid grid-cols-2 gap-1.5 mb-3">
+        <button onclick="createNode('User','User','#38bdf8')"          class="btn-node">👤 User</button>
+        <button onclick="createNode('Server','API Gateway','#818cf8')" class="btn-node">⚡ Server</button>
+        <button onclick="createNode('Database','Database','#fb923c')"  class="btn-node">🗄 Database</button>
+        <button onclick="createNode('Worker','Worker','#4ade80')"      class="btn-node">⚙️ Worker</button>
+        <button onclick="createNode('LoadBalancer','Load Balancer','#a78bfa')" class="btn-node col-span-2">⚖️ Load Balancer</button>
+        <button onclick="createNode('Cache','Cache','#34d399')"        class="btn-node">💾 Cache</button>
+        <button onclick="createNode('Queue','Message Queue','#38bdf8')"class="btn-node">📨 Queue</button>
+    </div>
+
+    <div class="pt-3" style="border-top:1px solid #f1f5f9;">
+        <p class="text-[9px] mb-2.5 leading-5" style="color:#94a3b8;">
+            <span class="font-bold" style="color:#64748b;">Ctrl+Scroll</span> zoom &nbsp;
+            <span class="font-bold" style="color:#64748b;">Drag</span> pan<br>
+            <span class="font-bold" style="color:#64748b;">Port dot</span> → connect
+        </p>
+        <button onclick="exportJSON()"
+            class="w-full py-2 rounded-xl text-xs font-bold text-white transition"
+            style="background:#22c55e;">
+            Export JSON
+        </button>
+    </div>
+</div>
+
+<div id="viewport">
+    <svg id="cables-layer">
+        <defs>
+            <!-- 
+                Dark arrowhead. userSpaceOnUse = real px, not scaled by stroke.
+                refX=9: tip of triangle sits at the path endpoint.
+                refY=5: vertically centered.
+            -->
+            <marker id="arrow"
+                markerWidth="10" markerHeight="10"
+                refX="9" refY="5"
+                orient="auto"
+                markerUnits="userSpaceOnUse">
+                <path d="M1,1 L1,9 L9,5 z" fill="#334155"/>
+            </marker>
+            <marker id="arrow-drag"
+                markerWidth="10" markerHeight="10"
+                refX="9" refY="5"
+                orient="auto"
+                markerUnits="userSpaceOnUse">
+                <path d="M1,1 L1,9 L9,5 z" fill="#3b82f6"/>
+            </marker>
+        </defs>
+        <path id="drag-line" d="" style="display:none;" marker-end="url(#arrow-drag)"/>
+    </svg>
+
+    <div id="world">
+        <div id="grid"></div>
+        <div id="node-layer"></div>
+    </div>
+</div>
+
+<script src="/prism-engine/prism-core.js"></script>
+<script src="/prism-engine/prism-nodes.js"></script>
+<script>
+    createNode('User', 'Root User', '#38bdf8');
+    setTimeout(() => createNode('Server', 'App Server', '#818cf8'), 60);
+</script>
+</body>
+</html>
