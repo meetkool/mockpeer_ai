@@ -40,14 +40,26 @@
     <div id="viewport">
         <svg id="cables-layer">
             <defs>
-                <marker id="arrow" markerWidth="10" markerHeight="10" refX="16" refY="3" orient="auto"
-                    markerUnits="strokeWidth">
-                    <path d="M0,0 L0,6 L9,3 z" fill="#94a3b8" />
+                <!-- 
+                    markerUnits="userSpaceOnUse" = arrow size in real pixels, not scaled by stroke-width
+                    markerWidth/Height = bounding box of the arrow in pixels
+                    refX = how far from the tip to anchor (pushes arrow back so tip doesn't hide under node)
+                    refY = vertical center of the arrow shape
+                -->
+                <marker id="arrow" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto"
+                    markerUnits="userSpaceOnUse">
+                    <!-- Sharp, clean triangle -->
+                    <path d="M2,2 L2,12 L13,7 z" fill="#64748b" />
+                </marker>
+                <!-- Brighter arrow for the drag-line preview -->
+                <marker id="arrow-active" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto"
+                    markerUnits="userSpaceOnUse">
+                    <path d="M2,2 L2,12 L13,7 z" fill="#38bdf8" />
                 </marker>
             </defs>
 
-            <path id="drag-line" d="" stroke="#38bdf8" stroke-width="3" fill="none" stroke-dasharray="5"
-                style="display:none" marker-end="url(#arrow)"></path>
+            <path id="drag-line" d="" stroke="#38bdf8" stroke-width="2" fill="none" stroke-dasharray="6 3"
+                style="display:none" marker-end="url(#arrow-active)"></path>
         </svg>
 
         <div id="world">

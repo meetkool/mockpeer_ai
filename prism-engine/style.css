@@ -178,11 +178,17 @@ svg {
     transition: all 0.2s;
 }
 
-/* Cables */
+/* Cables - thicker, more visible */
 path {
     fill: none;
-    stroke: #94a3b8;
+    stroke: #64748b;
     stroke-width: 2px;
     stroke-linecap: round;
     pointer-events: none;
+}
+
+/* Permanent connections slightly brighter */
+path[id*="node-"] {
+    stroke: #94a3b8;
+    stroke-width: 2.5px;
 }
